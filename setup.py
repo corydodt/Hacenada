@@ -1,26 +1,28 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-
-VERSION = '0.0.1+dev'
+VERSION = "0.0.1+dev"
 
 
 data = {
-    'name': 'Hacenada',
-    'version': VERSION,
-    'description': 'Write do-nothing scripts',
-    'packages': find_packages(where='src', include=('hacenada', 'hacenada.*')),
-
-    'install_requires': [
-        'click',
-        'codado',
-        'inquirer',
+    "name": "Hacenada",
+    "version": VERSION,
+    "description": "Write do-nothing scripts",
+    "packages": find_packages(where="src", include=("hacenada", "hacenada.*")),
+    "install_requires": [
+        "click",
+        "codado",
+        "inquirer",
     ],
-    'extras_require': [
-        'pytest',
-        'tox',
-        'flake8',
-        'black',
-    ]
+    "extras_require": {
+        "dev": [
+            "isort",
+            "pytest",
+            "pytest-coverage",
+            "pytest-flake8",
+            "tox",
+            "black",
+        ]
+    },
 }
 
 setup(**data)
