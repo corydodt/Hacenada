@@ -26,7 +26,7 @@ class MissingScriptError(Exception):
     Failed to find the script file to initialize a session
     """
 
-    def __init__(self, path, message=""):
+    def __init__(self, path: pathlib.Path, message: str = ""):
         self.path = path
         self.message = message or f"{path} missing"
 
@@ -55,13 +55,13 @@ class Session:
         return self.get_session_path(self.script_path)
 
     @staticmethod
-    def get_session_path(script_path, create=False):
+    def get_session_path(script_path: pathlib.Path, create=False):
         """
         Using the path to the script_file, determine the location of the session file and return it
 
         -> None if the session file does not exist
         """
-        return pathlib.Path(f"{script_path.parent}/.{script_path.name}.session")
+        return pathlib.Path(f"{script_path.parent}/.{script_path.stem}.session.tgz")
 
     @classmethod
     def from_filename(cls, script_file):
@@ -159,17 +159,21 @@ class Session:
         """
         td = tempfile.TemporaryDirectory()
         try:
-            tar = tarfile.open(f"{td.name}/session.tar", "w:gz")
-            session_obj = bytesio_from_data({"session": self.answers})
-            script_obj = bytesio_from_data({"script": self.script.to_structured()})
+            tar = tarfile.open(f"{td.name}/session.tgz", "w:gz")
+
             tar.addfile(
-                tarfile.TarInfo(name=f"{self.script_path.name}.d/session.json"),
-                session_obj,
+                *package_tar_data(
+                    {"session": self.answers},
+                    f"{self.script_path.stem}.d/session.json",
+                )
             )
             tar.addfile(
-                tarfile.TarInfo(name=f"{self.script_path.name}.d/script.json"),
-                script_obj,
+                *package_tar_data(
+                    {"script": self.script.to_structured()},
+                    f"{self.script_path.stem}.d/script.json",
+                )
             )
+            tar.close()
 
             pathlib.Path(tar.name).rename(self.session_path)
             log("saved")
@@ -177,13 +181,14 @@ class Session:
             td.cleanup()
 
 
-def bytesio_from_data(data):
+def package_tar_data(data, filename: str):
     """
-    A new BytesIO object with the contents of `data`, JSON- and UTF8-encoded
-
-    -> new open fileobj with the data
+    A (TarInfo, fileobj) for the given data, after json- and utf8-encoding it.
     """
-    bytes = json.dumps(data).encode(ENCODING)
+    ti = tarfile.TarInfo(name=filename)
+    encoded = json.dumps(data, indent=2, sort_keys=True).encode(ENCODING)
     byte_f = io.BytesIO()
-    byte_f.write(bytes)
-    return byte_f
+    byte_f.write(encoded)
+    ti.size = byte_f.tell()
+    byte_f.seek(0)
+    return (ti, byte_f)

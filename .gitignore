@@ -129,4 +129,6 @@ dmypy.json
 .pyre/
 
 /.vscode/
-*.toml.session
+*.session.tgz
+/example/*.d
+
