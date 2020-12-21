@@ -3,16 +3,14 @@ Read/write from the .session file, manage which step we're on, manage logs
 """
 import io
 import json
-import os
 import pathlib
 import re
 import tarfile
 import tempfile
 
 import attr
-import toml
 
-from hacenada.render import Render
+from hacenada import render
 from hacenada.script import Script
 
 
@@ -45,7 +43,7 @@ class Session:
     script_path: pathlib.Path = attr.ib(converter=pathlib.Path)
     script: Script = None
     answers: list = attr.Factory(list)
-    renderer: Render = attr.Factory(Render)
+    renderer: render.Render = attr.Factory(render.Render)
 
     SCRIPT_FROM_SESSION_RX = re.compile(r"\.(.+?)\.session")
 
@@ -142,17 +140,16 @@ class Session:
         assert self.script, "doing step_session but start() was not called"
 
         index = len(self.answers)
-        step = self.script.steps[index]
+        remaining = self.script.overlay[index:]
 
-        response = self.renderer.render(context=self.answers, step=step)
-        self.answers.append(response)
+        for step in remaining:
+            try:
+                self.answers = self.renderer.render(step, context=self.answers)
+                self.save()
+            except render.StopRendering:
+                break
 
         self.save()
-
-        ## exiting = False
-        ## while not exiting:
-        ##     response = self.render(context=self.answers, step)
-        ##     exiting = True if not step.disable_break else False
 
         log("finished steps")
 

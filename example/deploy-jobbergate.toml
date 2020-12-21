@@ -6,14 +6,14 @@ description = "Deploy Jobbergate to a stage and region"
 # label =  # (autonumbered, "<type>-<n>")
 # type = "message"  # default type
 message = """
-    Let's get started deploying jobbergate to {stage}/{region}
+    Let's get started deploying jobbergate
 
     Before we get started, please gather the following:
 
     - xxx
     - yyy
     """
-break = false
+stop = false
 
 [[step]]
 # label =  # (auto)
@@ -22,7 +22,7 @@ type = "description"
 message = """
     Please enter a description for this operation, such as "Deploying v0.2 to eu-north-1 staging"
     """
-break = false
+stop = false
 
 [[step]]
 # label =  # (auto)
@@ -30,4 +30,4 @@ type = "confirm"
 message = "Have you gathered all that?"
 repeat-if = false
 
-# first break occurs naturally here
+# first stop occurs naturally here
