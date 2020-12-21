@@ -1,18 +1,20 @@
-SHELL		:= bash
+SHELL 			:= /bin/bash
+.PHONY			:= test format
 
 
-.PHONY: format
-
-
-format:
-	black setup.py src
+format: # reformat source python files
 	isort setup.py src
+	black setup.py src
 
 
-requirements.txt: setup.py
+test: # run automated tests
+	tox
+
+
+requirements/requirements.txt: setup.py
 	python3 -m venv _virtual_tmp
 	. _virtual_tmp/bin/activate \
 		&& pip install wheel \
 		&& pip install . \
-		&& pip freeze | grep -v hacenada > $@
+		&& pip freeze | grep -v hacenada > requirements/requirements.txt
 	rm -rf _virtual_tmp
