@@ -10,8 +10,9 @@ message = """
 
     Before we get started, please gather the following:
 
-    - xxx
-    - yyy
+    - REGISTER_VERIFICATION_URL
+    - SENTRY_DSN
+    - What kind of deployment is this to be? (production, staging, developer-facing)
     """
 stop = false
 
@@ -31,3 +32,66 @@ message = "Have you gathered all that?"
 repeat-if = false
 
 # first stop occurs naturally here
+
+[[step]]
+message = """
+    In the jobbergate-api repo directory:
+
+    $ scripts/ssmparameters.py <stage> --region <region>
+    """
+
+[[step]]
+message = "create include/<region>/<stage>.yml if you are doing a new developer-facing deployment"
+
+[[step]]
+message = "in jobbergate-api, run `npx serverless deploy --stage <stage> --region <region>"
+stop = false
+
+[[step]]
+message = """
+    While npx serverless deploy is running:
+
+    - Visit https://<region>.console.aws.amazon.com/acm/home?region=<region>#/
+    - Find your cert (it may take a few minutes to appear)
+    - Expand the domain entry, under your cert
+    - Click "Create Record in Route 53"
+
+    If this is not a new deploy (you have previously used the API hostname), you will not
+    have to do this again.
+    """
+
+[[step]]
+message = """
+    In a shell session, run `eval $(scripts/serverlessenv.py <stage> --region <region>)`
+    """
+    stop = false
+
+[[step]]
+message = """
+    Connect your openvpn now!
+    """
+    stop = false
+
+[[step]]
+message = """
+    ./manage.py migrate
+    ./manage.py createsuperuser
+    # (use your email address and generate a new password)
+    ./manage.py collectstatic
+    npx serverless syncToS3 --stage <stage> --region <region>
+    """
+
+[[step]]
+message = """
+    Double-check by going to https://jobbergate-api-<stage>-<region>.omnivector.solutions/admin/
+
+    Make sure the page loads with CSS
+    """
+
+## [[step]]
+## message = """
+##     Now we're in the jobbergate-web repo directory.
+##
+##     create stage/<stage>/serverless.yml if you are doing a new developer-facing deployment
+##     """
+##
