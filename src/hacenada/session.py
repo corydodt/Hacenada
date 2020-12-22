@@ -44,6 +44,7 @@ class Session:
     script: Script = None
     answers: list = attr.Factory(list)
     renderer: render.Render = attr.Factory(render.Render)
+    description: str = ""
 
     SCRIPT_FROM_SESSION_RX = re.compile(r"\.(.+?)\.session.tgz")
 
@@ -74,7 +75,6 @@ class Session:
 
         sesh_path = cls.get_session_path(script_path)
         self = cls(script_path, sesh_path)
-        log(f"created Session from {sesh_path}")
         return self
 
     @classmethod
@@ -90,7 +90,9 @@ class Session:
         Otherwise returns a new Session instance
         """
         cwd = pathlib.Path(".")
-        _missing = MissingScriptError(None, f"no hacenada sessions found in {cwd}")
+        _missing = MissingScriptError(
+            None, f"no hacenada sessions (*.session.tgz) found in {cwd}"
+        )
         _multiple = MissingScriptError(
             None,
             f"more than 1 hacenada session found in {cwd}; instead, please run: hacenada next <script_file>",
@@ -131,8 +133,6 @@ class Session:
 
         self.load()
 
-        log("starting")
-
     def step_session(self):
         """
         Advance the session to the next question step, render, and collect the answer
@@ -146,14 +146,39 @@ class Session:
         remaining = self.script.overlay[index:]
 
         for step in remaining:
-            self.answers.append(
-                self.renderer.render(step, context=self)
-            )
+            answer = self.renderer.render(step, context=self)
+            self.answers.append(answer)
+            posthandler = getattr(self, f"post_{step['type']}", lambda *a: None)
+            posthandler(step["label"], step["type"], answer[step["label"]])
             self.save()
-            if step['stop']:
+            if step["stop"]:
                 break
 
-        log("finished steps")
+        print("---------------")
+
+    def post_description(self, _, __, value):
+        """
+        Set the description attribute
+        """
+        self.description = value
+
+    def to_structured(self):
+        """
+        A structured representation
+        """
+
+        def serialize(inst, field, value):
+            if isinstance(value, pathlib.Path):
+                return value.name
+            if isinstance(value, Script):
+                return value.to_structured()
+            return value
+
+        return attr.asdict(
+            self,
+            filter=attr.filters.exclude(render.Render),
+            value_serializer=serialize,
+        )
 
     def load(self):
         td = tempfile.TemporaryDirectory()
@@ -161,13 +186,14 @@ class Session:
             tar = tarfile.open(self.session_path, "r:gz")
             tar.extractall(td.name)
             with open(f"{td.name}/{self.script_path.stem}.d/session.json") as f:
-                self.answers = json.load(f)["session"]
-            with open(f"{td.name}/{self.script_path.stem}.d/script.json") as f:
-                orig_script = Script.from_structured(json.load(f))
+                session_data = json.load(f)
+                self.answers = session_data["answers"]
+                self.description = session_data["description"]
+                orig_script = Script.from_structured(session_data["script"])
                 assert (
                     orig_script == self.script
                 ), "The script file has changed since last save! Retry with --use-saved-script"
-            log("loaded")
+            log(f"loaded {self.session_path}")
         finally:
             td.cleanup()
 
@@ -181,20 +207,14 @@ class Session:
 
             tar.addfile(
                 *package_tar_data(
-                    {"session": self.answers},
+                    self.to_structured(),
                     f"{self.script_path.stem}.d/session.json",
-                )
-            )
-            tar.addfile(
-                *package_tar_data(
-                    self.script.to_structured(),
-                    f"{self.script_path.stem}.d/script.json",
                 )
             )
             tar.close()
 
             pathlib.Path(tar.name).rename(self.session_path)
-            log("saved")
+            log(f"saved {self.session_path}")
         finally:
             td.cleanup()
 

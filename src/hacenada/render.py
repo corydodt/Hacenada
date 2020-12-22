@@ -3,6 +3,7 @@ Render (or execute) steps
 """
 import PyInquirer as pyinquirer
 
+
 ## from hacenada.inquireradapter import ConsoleRenderCustom
 
 
@@ -21,9 +22,7 @@ def _adapt_answers(answers_list):
     """
     Convert our answers list into an answers dict which pyinquirer can use
     """
-    return {
-        k: v for answer in answers_list for (k, v) in answer.items()
-    }
+    return {k: v for answer in answers_list for (k, v) in answer.items()}
 
 
 class Render:
@@ -48,16 +47,20 @@ class Render:
         """
         pyinq_type = self._inquirer_type(step["type"])
 
-        message = (
-            f"{context.script.preamble['name']} : {step['label']}\n"
-            f"{step['message']}\n"
-        )
+        if context.description:
+            title = f"{context.description} : {step['label']}"
+        else:
+            title = f"{context.script.preamble['name']} : {step['label']}"
 
-        qs = [dict(
-            name=step["label"],
-            message=message,
-            type=pyinq_type,
-        )]
+        message = f"{title}\n" f"{step['message']}\n>>"
+
+        qs = [
+            dict(
+                name=step["label"],
+                message=message,
+                type=pyinq_type,
+            )
+        ]
         _pyinq_answers = _adapt_answers(context.answers)
         ret = pyinquirer.prompt(questions=qs, answers=_pyinq_answers)
 

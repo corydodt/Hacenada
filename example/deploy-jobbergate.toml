@@ -22,13 +22,9 @@ Before we get started, please gather the following:
 - REGISTER_VERIFICATION_URL
 - SENTRY_DSN
 - What kind of deployment is this to be? (production, staging, developer-facing)
-"""
-stop = false
 
-[[step]]
-# label =  # (auto)
-type = "confirm"
-message = "Have you gathered all that?"
+Have you gathered all that?
+"""
 repeat-if = false
 
 # first stop occurs naturally here

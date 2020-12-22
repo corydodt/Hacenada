@@ -14,7 +14,7 @@ class Step(typing.TypedDict, total=False):
     stop: bool
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class Script:
     """
     Structured hacenada script representation from parsing a .toml script
