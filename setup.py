@@ -14,7 +14,7 @@ data = {
         "attrs",
         "click",
         "codado",
-        "inquirer",
+        "pyinquirer",
         "toml",
     ],
     "extras_require": {

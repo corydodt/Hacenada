@@ -1,10 +1,9 @@
 """
 Render (or execute) steps
 """
+import PyInquirer as pyinquirer
 
-import inquirer
-
-from hacenada.inquireradapter import ConsoleRenderCustom
+## from hacenada.inquireradapter import ConsoleRenderCustom
 
 
 class StopRendering(Exception):
@@ -28,21 +27,30 @@ class Render:
         Return the inquirer question type for the given type name
         """
         return {
-            "description": inquirer.Text,
-            "editor": inquirer.Editor,
-            "message": inquirer.Confirm,
-            "confirm": inquirer.Confirm,
+            "description": "input",
+            "editor": "editor",
+            "message": "confirm",
+            "confirm": "confirm",
         }[typename]
 
     def render(self, step, context):
         """
         Output a question to a device
         """
-        clz = self._inquirer_type(step["type"])
+        pyinq_type = self._inquirer_type(step["type"])
 
-        qs = [clz(name=step["label"], message=step["message"])]
+        message = (
+            f"{context.script.preamble['name']} : {step['label']}\n"
+            f"{step['message']}\n"
+        )
 
-        inquirer.prompt(qs, answers=context)  # render=ConsoleRenderCustom)
+        qs = [dict(
+            name=step["label"],
+            message=message,
+            type=pyinq_type,
+        )]
+
+        pyinquirer.prompt(questions=qs, answers=context.answers)
 
         if step["stop"]:
             raise StopRendering(step)

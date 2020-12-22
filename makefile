@@ -11,10 +11,10 @@ test: # run automated tests
 	tox
 
 
-requirements/requirements.txt: setup.py
+requirements.txt: setup.py
 	python3 -m venv _virtual_tmp
 	. _virtual_tmp/bin/activate \
 		&& pip install wheel \
 		&& pip install . \
-		&& pip freeze | grep -v hacenada > requirements/requirements.txt
+		&& pip freeze | grep -v hacenada > $@
 	rm -rf _virtual_tmp

@@ -4,25 +4,25 @@ description = "Deploy Jobbergate to a stage and region"
 
 [[step]]
 # label =  # (autonumbered, "<type>-<n>")
-# type = "message"  # default type
+label = "description"
+type = "description"
 message = """
-    Let's get started deploying jobbergate
+Let's get started deploying jobbergate
 
-    Before we get started, please gather the following:
-
-    - REGISTER_VERIFICATION_URL
-    - SENTRY_DSN
-    - What kind of deployment is this to be? (production, staging, developer-facing)
-    """
+Please enter a description for this operation, such as "Deploying v0.2 to eu-north-1 staging"
+"""
 stop = false
 
 [[step]]
 # label =  # (auto)
-label = "description"
-type = "description"
+# type = "message"  # default type
 message = """
-    Please enter a description for this operation, such as "Deploying v0.2 to eu-north-1 staging"
-    """
+Before we get started, please gather the following:
+
+- REGISTER_VERIFICATION_URL
+- SENTRY_DSN
+- What kind of deployment is this to be? (production, staging, developer-facing)
+"""
 stop = false
 
 [[step]]
@@ -35,10 +35,10 @@ repeat-if = false
 
 [[step]]
 message = """
-    In the jobbergate-api repo directory:
+In the jobbergate-api repo directory:
 
-    $ scripts/ssmparameters.py <stage> --region <region>
-    """
+$ scripts/ssmparameters.py <stage> --region <region>
+"""
 
 [[step]]
 message = "create include/<region>/<stage>.yml if you are doing a new developer-facing deployment"
@@ -49,49 +49,49 @@ stop = false
 
 [[step]]
 message = """
-    While npx serverless deploy is running:
+While npx serverless deploy is running:
 
-    - Visit https://<region>.console.aws.amazon.com/acm/home?region=<region>#/
-    - Find your cert (it may take a few minutes to appear)
-    - Expand the domain entry, under your cert
-    - Click "Create Record in Route 53"
+- Visit https://<region>.console.aws.amazon.com/acm/home?region=<region>#/
+- Find your cert (it may take a few minutes to appear)
+- Expand the domain entry, under your cert
+- Click "Create Record in Route 53"
 
-    If this is not a new deploy (you have previously used the API hostname), you will not
-    have to do this again.
-    """
-
-[[step]]
-message = """
-    In a shell session, run `eval $(scripts/serverlessenv.py <stage> --region <region>)`
-    """
-    stop = false
+If this is not a new deploy (you have previously used the API hostname), you will not
+have to do this again.
+"""
 
 [[step]]
 message = """
-    Connect your openvpn now!
-    """
-    stop = false
+In a shell session, run `eval $(scripts/serverlessenv.py <stage> --region <region>)`
+"""
+stop = false
 
 [[step]]
 message = """
-    ./manage.py migrate
-    ./manage.py createsuperuser
-    # (use your email address and generate a new password)
-    ./manage.py collectstatic
-    npx serverless syncToS3 --stage <stage> --region <region>
-    """
+Connect your openvpn now!
+"""
+stop = false
 
 [[step]]
 message = """
-    Double-check by going to https://jobbergate-api-<stage>-<region>.omnivector.solutions/admin/
+./manage.py migrate
+./manage.py createsuperuser
+# (use your email address and generate a new password)
+./manage.py collectstatic
+npx serverless syncToS3 --stage <stage> --region <region>
+"""
 
-    Make sure the page loads with CSS
-    """
+[[step]]
+message = """
+Double-check by going to https://jobbergate-api-<stage>-<region>.omnivector.solutions/admin/
+
+Make sure the page loads with CSS
+"""
 
 ## [[step]]
 ## message = """
-##     Now we're in the jobbergate-web repo directory.
+## Now we're in the jobbergate-web repo directory.
 ##
-##     create stage/<stage>/serverless.yml if you are doing a new developer-facing deployment
-##     """
+## create stage/<stage>/serverless.yml if you are doing a new developer-facing deployment
+## """
 ##
