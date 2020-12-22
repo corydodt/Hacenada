@@ -46,12 +46,19 @@ class Script:
     @classmethod
     def from_scriptfile(cls, scriptfile):
         """
-        Constructor, creates a Script() instance from a filename
+        Constructor, creates a Script() instance from a filename containing .toml
         """
-        self = cls()
         with open(scriptfile) as f:
             data = toml.load(f)
 
+        return cls.from_structured(data)
+
+    @classmethod
+    def from_structured(cls, data):
+        """
+        Constructor, creates from structured data
+        """
+        self = cls()
         self.raw_steps = data["step"]
         self.overlay = self.preprocess_steps(data["step"])
         self.preamble = data["hacenada"]

@@ -18,7 +18,7 @@ ENCODING = "utf8"
 
 
 def log(msg):
-    print(f"✨{msg}")
+    print(f"✨ {msg}")
 
 
 class MissingScriptError(Exception):
@@ -45,7 +45,7 @@ class Session:
     answers: list = attr.Factory(list)
     renderer: render.Render = attr.Factory(render.Render)
 
-    SCRIPT_FROM_SESSION_RX = re.compile(r"\.(.+?)\.session")
+    SCRIPT_FROM_SESSION_RX = re.compile(r"\.(.+?)\.session.tgz")
 
     @property
     def session_path(self):
@@ -96,7 +96,7 @@ class Session:
             f"more than 1 hacenada session found in {cwd}; instead, please run: hacenada next <script_file>",
         )
 
-        sessions = list(cwd.glob(".*.session"))
+        sessions = list(cwd.glob(".*.session.tgz"))
         if len(sessions) > 1:
             raise _multiple
 
@@ -109,7 +109,7 @@ class Session:
         if not parsed.group(1):
             raise _missing
 
-        script_path = pathlib.Path(parsed.group(1))
+        script_path = pathlib.Path(f"{parsed.group(1)}.toml")
         ret = cls.from_filename(script_path)
 
         log(f"guessed {script_path}")
@@ -121,12 +121,15 @@ class Session:
 
     def start(self, create=False):
         """
-        Begin a session
+        Begin a session, loading from disk if possible
         """
-        if create:
-            self.session_path.open("w").close()
-
         self.script = Script.from_scriptfile(self.script_path)
+
+        if create:
+            # save an empty answer list so we can immediately load
+            self.save()
+
+        self.load()
 
         log("starting")
 
@@ -143,15 +146,30 @@ class Session:
         remaining = self.script.overlay[index:]
 
         for step in remaining:
-            try:
-                self.answers = self.renderer.render(step, context=self.answers)
-                self.save()
-            except render.StopRendering:
+            self.answers.append(
+                self.renderer.render(step, context=self)
+            )
+            self.save()
+            if step['stop']:
                 break
 
-        self.save()
-
         log("finished steps")
+
+    def load(self):
+        td = tempfile.TemporaryDirectory()
+        try:
+            tar = tarfile.open(self.session_path, "r:gz")
+            tar.extractall(td.name)
+            with open(f"{td.name}/{self.script_path.stem}.d/session.json") as f:
+                self.answers = json.load(f)["session"]
+            with open(f"{td.name}/{self.script_path.stem}.d/script.json") as f:
+                orig_script = Script.from_structured(json.load(f))
+                assert (
+                    orig_script == self.script
+                ), "The script file has changed since last save! Retry with --use-saved-script"
+            log("loaded")
+        finally:
+            td.cleanup()
 
     def save(self):
         """
@@ -169,7 +187,7 @@ class Session:
             )
             tar.addfile(
                 *package_tar_data(
-                    {"script": self.script.to_structured()},
+                    self.script.to_structured(),
                     f"{self.script_path.stem}.d/script.json",
                 )
             )

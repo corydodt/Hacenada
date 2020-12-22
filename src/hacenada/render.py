@@ -17,6 +17,15 @@ class StopRendering(Exception):
         self.step = step
 
 
+def _adapt_answers(answers_list):
+    """
+    Convert our answers list into an answers dict which pyinquirer can use
+    """
+    return {
+        k: v for answer in answers_list for (k, v) in answer.items()
+    }
+
+
 class Render:
     """
     Rendering operations for question types
@@ -49,8 +58,7 @@ class Render:
             message=message,
             type=pyinq_type,
         )]
+        _pyinq_answers = _adapt_answers(context.answers)
+        ret = pyinquirer.prompt(questions=qs, answers=_pyinq_answers)
 
-        pyinquirer.prompt(questions=qs, answers=context.answers)
-
-        if step["stop"]:
-            raise StopRendering(step)
+        return ret
