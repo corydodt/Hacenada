@@ -132,3 +132,5 @@ dmypy.json
 *.session.tgz
 /example/*.d
 
+
+*.snap

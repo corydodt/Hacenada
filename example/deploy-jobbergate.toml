@@ -37,9 +37,6 @@ $ scripts/ssmparameters.py <stage> --region <region>
 """
 
 [[step]]
-message = "create include/<region>/<stage>.yml if you are doing a new developer-facing deployment"
-
-[[step]]
 message = "in jobbergate-api, run `npx serverless deploy --stage <stage> --region <region>"
 stop = false
 
@@ -84,10 +81,15 @@ Double-check by going to https://jobbergate-api-<stage>-<region>.omnivector.solu
 Make sure the page loads with CSS
 """
 
-## [[step]]
-## message = """
-## Now we're in the jobbergate-web repo directory.
-##
-## create stage/<stage>/serverless.yml if you are doing a new developer-facing deployment
-## """
-##
+[[step]]
+message = """
+Now we're in the jobbergate-web repo directory.
+
+create stage/<region>/<stage>/serverless.yml if you are doing a new developer-facing deployment
+"""
+
+[[step]]
+message = """
+cd stage/<region>/<stage>
+npx serverless
+"""
