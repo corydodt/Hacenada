@@ -20,6 +20,7 @@ data = {
     "extras_require": {
         "dev": [
             "isort",
+            "mypy",
             "pytest",
             "pytest-coverage",
             "pytest-flake8",
