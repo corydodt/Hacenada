@@ -8,9 +8,13 @@
 	"python.testing.nosetestsEnabled": false,
 	"python.testing.pytestEnabled": true,
 	"python.testing.pytestArgs": [
-		"src"
+		"--no-cov", "src"
 	],
 	"settings": {
-		"workbench.colorTheme": "Kimbie Dark"
-	}
+		"workbench.colorTheme": "Apophis Dark Matter - Cold - Sulfur"
+	},
+	"python.linting.flake8Enabled": true,
+	"python.linting.flake8Args": [
+		"src/"
+	]
 }
