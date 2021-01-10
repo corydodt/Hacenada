@@ -7,6 +7,7 @@ import pathlib
 import re
 import tarfile
 import tempfile
+import typing
 
 import attr
 
@@ -21,7 +22,13 @@ def log(msg):
     print(f"✨ {msg}")
 
 
-class MissingScriptError(Exception):
+class SessionError(Exception):
+    """
+    Common root for catching any session exception
+    """
+
+
+class MissingScriptError(SessionError):
     """
     Failed to find the script file to initialize a session
     """
@@ -35,28 +42,38 @@ class MissingScriptError(Exception):
 
 
 @attr.s(auto_attribs=True)
+class SessionOptions:
+    """
+    Options for a Session
+    """
+
+    create: bool = False
+
+
+@attr.s(auto_attribs=True)
 class Session:
     """
     The state as we answer the script questions
     """
 
     script_path: pathlib.Path = attr.ib(converter=pathlib.Path)
-    script: Script = None
+    script: typing.Optional[Script] = None
     answers: list = attr.Factory(list)
     renderer: render.Render = attr.Factory(render.Render)
     description: str = ""
+    options: typing.Optional[SessionOptions] = None
 
     SCRIPT_FROM_SESSION_RX = re.compile(r"\.(.+?)\.session.tgz")
 
     @property
-    def session_path(self):
+    def session_path(self) -> pathlib.Path:
         """
         Derive session_path from script_path
         """
         return self.get_session_path(self.script_path)
 
     @staticmethod
-    def get_session_path(script_path: pathlib.Path, create=False):
+    def get_session_path(script_path: pathlib.Path, create=False) -> pathlib.Path:
         """
         Using the path to the script_file, determine the location of the session file and return it
 
@@ -121,16 +138,17 @@ class Session:
     def started(self):
         return self.session_path.exists()
 
-    def start(self, create=False):
+    def start(self, options: SessionOptions):
         """
         Begin a session, loading from disk if possible
         """
         self.script = Script.from_scriptfile(self.script_path)
 
-        if create:
+        if options.create:
             # save an empty answer list so we can immediately load
             self.save()
 
+        self.options = options
         self.load()
 
     def step_session(self):
@@ -181,6 +199,10 @@ class Session:
         )
 
     def load(self):
+        """
+        Read the tarball of the last session, and set .answers and .description from the data
+        """
+
         td = tempfile.TemporaryDirectory()
         try:
             tar = tarfile.open(self.session_path, "r:gz")

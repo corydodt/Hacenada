@@ -35,9 +35,11 @@ https://blog.danslimmon.com/2019/07/15/do-nothing-scripting-the-key-to-gradual-a
 
       Could also be a snap install!
 """
+import json
 import pathlib
 
 import click
+import toml
 
 from hacenada import session
 
@@ -77,6 +79,21 @@ def hacenada():
     """
 
 
+def _attempt_session_from_filename(filename) -> session.Session:
+    """
+    Produce a session after figuring out what the filename should have been
+    """
+    try:
+        if filename:
+            sesh = session.Session.from_filename(filename)
+        else:
+            sesh = session.Session.from_guessed_filename()
+    except session.MissingScriptError as e:
+        raise click.UsageError(str(e))
+
+    return sesh
+
+
 @hacenada.command()
 @filename_arg(required=False)
 def next(filename):
@@ -89,15 +106,13 @@ def next(filename):
     With no FILENAME, look for any continuation file, and continue it.
     This is an error if there are multiple continuation files, or none.
     """
-    try:
-        if filename:
-            sesh = session.Session.from_filename(filename)
-        else:
-            sesh = session.Session.from_guessed_filename()
-    except session.MissingScriptError as e:
-        raise click.UsageError(str(e))
+    sesh = _attempt_session_from_filename(filename)
 
-    sesh.start(create=False)
+    options = session.SessionOptions(create=False)
+    try:
+        sesh.start(options)
+    except session.ChangedScriptError as e:
+        raise click.UsageError(str(e))
     sesh.step_session()
 
 
@@ -114,7 +129,8 @@ def start(filename, starting_over):
             f"** {sesh.session_path} exists, will not overwrite an ongoing session without --start-over"
         )
 
-    sesh.start(create=True)
+    options = session.SessionOptions(create=True)
+    sesh.start(options)
     sesh.step_session()
 
 
@@ -122,7 +138,7 @@ FORMAT_CHOICES = ("toml", "json", "markdown")
 
 
 @hacenada.command("print")
-@filename_arg()
+@filename_arg(required=False)
 @click.option("--format", default="toml", type=click.Choice(FORMAT_CHOICES))
 @click.option("--answers/--no-answers", "with_answers", default=True)
 def print_script(filename, format, with_answers):
@@ -131,4 +147,21 @@ def print_script(filename, format, with_answers):
 
     With --answers (the default), include the answers from the current session
     """
-    raise NotImplementedError()
+
+    sesh = _attempt_session_from_filename(filename)
+    options = session.SessionOptions()
+    if not sesh.started and with_answers:
+        raise click.UsageError("There are no answers to print!")
+
+    try:
+        sesh.start(options)
+    except session.MissingSessionError:
+        "This is ok, it just means no answers to print"
+
+    structured = sesh.to_structured()
+    if format == "toml":
+        print(toml.dumps(structured))
+    elif format == "json":
+        print(json.dumps(structured))
+    elif format == "markdown":
+        raise NotImplementedError()
