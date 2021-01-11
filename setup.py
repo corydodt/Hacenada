@@ -15,6 +15,7 @@ data = {
         "click",
         "codado",
         "pyinquirer",
+        "tinydb",
         "toml",
     ],
     "extras_require": {

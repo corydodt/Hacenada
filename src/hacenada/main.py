@@ -41,7 +41,7 @@ import pathlib
 import click
 import toml
 
-from hacenada import session
+from hacenada import render, script, session, storage
 
 
 def handle_filename(_, param, value):
@@ -79,21 +79,6 @@ def hacenada():
     """
 
 
-def _attempt_session_from_filename(filename) -> session.Session:
-    """
-    Produce a session after figuring out what the filename should have been
-    """
-    try:
-        if filename:
-            sesh = session.Session.from_filename(filename)
-        else:
-            sesh = session.Session.from_guessed_filename()
-    except session.MissingScriptError as e:
-        raise click.UsageError(str(e))
-
-    return sesh
-
-
 @hacenada.command()
 @filename_arg(required=False)
 def next(filename):
@@ -106,13 +91,16 @@ def next(filename):
     With no FILENAME, look for any continuation file, and continue it.
     This is an error if there are multiple continuation files, or none.
     """
-    sesh = _attempt_session_from_filename(filename)
+    if filename:
+        _store = storage.HomeDirectoryStorage.from_path(filename)
+    else:
+        _store = storage.HomeDirectoryStorage.from_cwd()
+        filename = _store.script_path
 
-    options = session.SessionOptions(create=False)
-    try:
-        sesh.start(options)
-    except session.ChangedScriptError as e:
-        raise click.UsageError(str(e))
+    _opt = session.SessionOptions(renderer=render.PyInquirerRender())
+    _script = script.Script.from_scriptfile(filename)
+    sesh = session.Session(script=_script, storage=_store, options=_opt)
+
     sesh.step_session()
 
 
@@ -123,14 +111,19 @@ def start(filename, starting_over):
     """
     Begin a new session after opening filename.
     """
-    sesh = session.Session.from_filename(filename)
+    _store = storage.HomeDirectoryStorage.from_path(filename)
+    if starting_over:
+        _store.drop()
+        _store = storage.HomeDirectoryStorage.from_path(filename)
+
+    _script = script.Script.from_scriptfile(filename)
+    _opt = session.SessionOptions(renderer=render.PyInquirerRender())
+    sesh = session.Session(script=_script, storage=_store, options=_opt)
     if sesh.started and not starting_over:
         raise click.UsageError(
-            f"** {sesh.session_path} exists, will not overwrite an ongoing session without --start-over"
+            f"** {_store} already contains some answers, will not overwrite an ongoing session without --start-over"
         )
 
-    options = session.SessionOptions(create=True)
-    sesh.start(options)
     sesh.step_session()
 
 
@@ -148,20 +141,53 @@ def print_script(filename, format, with_answers):
     With --answers (the default), include the answers from the current session
     """
 
-    sesh = _attempt_session_from_filename(filename)
-    options = session.SessionOptions()
-    if not sesh.started and with_answers:
-        raise click.UsageError("There are no answers to print!")
+    if filename:
+        _store = storage.HomeDirectoryStorage.from_path(filename)
+    else:
+        _store = storage.HomeDirectoryStorage.from_cwd()
+        filename = _store.script_path
 
-    try:
-        sesh.start(options)
-    except session.MissingSessionError:
-        "This is ok, it just means no answers to print"
+    _script = script.Script.from_scriptfile(filename)
 
-    structured = sesh.to_structured()
-    if format == "toml":
-        print(toml.dumps(structured))
-    elif format == "json":
-        print(json.dumps(structured))
-    elif format == "markdown":
-        raise NotImplementedError()
+    from hacenada import main
+    printer = getattr(main, f"print_{format}")
+    printer(_script, _store)
+
+
+def print_toml(script, storage):
+    print(toml.dumps({"hacenada": script.preamble}))
+    print(toml.dumps({"step": script.raw_steps}))
+    print(toml.dumps({"answer": storage.answer.all()}))
+
+
+def print_json(script, storage):
+    ret = dict(
+        hacenada=script.preamble,
+        step=script.raw_steps,
+        answer=storage.answer.all(),
+    )
+    print(json.dumps(ret, indent=2))
+
+
+def print_markdown(script, storage):
+    """
+    Markdown formatting interleaves questions with answers to produce a human-readable document
+    """
+    print(f"# {script.preamble['name'] or storage.script_path}\n")
+    print(f"{script.preamble['description'] or ''}\n")
+    if storage.description:
+        desc = storage.description.replace('\n', ' ').strip()
+        print(f"### Current: **{desc}**\n")
+
+    print("## Steps\n")
+    for step in script.overlay:
+        label = step["label"]
+        print(f"[{label}]  {step['message'].strip()}\n")
+        # TODO: depending on step['type'], format and print interactive choices
+
+        _answered = storage.get_answer(label)
+        if _answered:
+            print(f"➡️➡️**{_answered['value']}**\n")
+
+        if step["stop"]:
+            print("------\n")

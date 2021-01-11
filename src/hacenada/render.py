@@ -3,8 +3,10 @@ Render (or execute) steps
 """
 import PyInquirer as pyinquirer
 
-
-## from hacenada.inquireradapter import ConsoleRenderCustom
+from hacenada.abstract import Render
+from hacenada.const import STR_DICT
+from hacenada.script import Step
+from hacenada.session import Session
 
 
 class StopRendering(Exception):
@@ -18,19 +20,12 @@ class StopRendering(Exception):
         self.step = step
 
 
-def _adapt_answers(answers_list):
+class PyInquirerRender(Render):
     """
-    Convert our answers list into an answers dict which pyinquirer can use
-    """
-    return {k: v for answer in answers_list for (k, v) in answer.items()}
-
-
-class Render:
-    """
-    Rendering operations for question types
+    Render to console using pyinquirer
     """
 
-    def _inquirer_type(self, typename):
+    def _inquirer_type(self, typename: str) -> str:
         """
         Return the inquirer question type for the given type name
         """
@@ -41,14 +36,14 @@ class Render:
             "confirm": "confirm",
         }[typename]
 
-    def render(self, step, context):
+    def render(self, step: Step, context: Session) -> STR_DICT:
         """
         Output a question to a device
         """
         pyinq_type = self._inquirer_type(step["type"])
 
-        if context.description:
-            title = f"{context.description} : {step['label']}"
+        if context.storage.description:
+            title = f"{context.storage.description} : {step['label']}"
         else:
             title = f"{context.script.preamble['name']} : {step['label']}"
 
@@ -61,7 +56,7 @@ class Render:
                 type=pyinq_type,
             )
         ]
-        _pyinq_answers = _adapt_answers(context.answers)
-        ret = pyinquirer.prompt(questions=qs, answers=_pyinq_answers)
+        _pyinq_answers: STR_DICT = {}  # TODO
+        pyinq_answers = pyinquirer.prompt(questions=qs, answers=_pyinq_answers)
 
-        return ret
+        return {step["label"]: pyinq_answers[step["label"]]}

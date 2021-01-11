@@ -10,7 +10,7 @@ import toml
 class Step(typing.TypedDict, total=False):
     type: str
     message: str
-    label: typing.Union[str, None]
+    label: str
     stop: bool
 
 
@@ -33,11 +33,15 @@ class Script:
         """
         overlay = []
         for n, item in enumerate(steps):
-            step = Step(**item)
-            step.setdefault("type", "message")
-            step.setdefault("stop", True)
+            step = Step(
+                type=item.get("type", "message"),
+                message=item["message"],
+                stop=item.get("stop", True),
+                label=item.get("label", ""),
+            )
 
-            step.setdefault("label", self.autolabel(step, n))
+            if not step["label"]:
+                step["label"] = self.autolabel(step, n)
 
             overlay.append(step)
 
@@ -63,9 +67,3 @@ class Script:
         self.overlay = self.preprocess_steps(data["step"])
         self.preamble = data["hacenada"]
         return self
-
-    def to_structured(self):
-        """
-        A structured-data representation of the script
-        """
-        return {"hacenada": self.preamble, "step": self.raw_steps}
