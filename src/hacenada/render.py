@@ -15,7 +15,8 @@ class PyInquirerRender(Render):
     Render to console using pyinquirer
     """
 
-    def _inquirer_type(self, typename: str) -> str:
+    @staticmethod
+    def _inquirer_type(typename: str) -> str:
         """
         Return the inquirer question type for the given type name
         """

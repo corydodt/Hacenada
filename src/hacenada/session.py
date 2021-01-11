@@ -1,11 +1,12 @@
 """
 Read/write from the .session file, manage which step we're on, manage logs
 """
+from __future__ import annotations
 
 import attr
 
-from hacenada import error, render
-from hacenada.abstract import SessionStorage
+from hacenada import error
+from hacenada.abstract import Render, SessionStorage
 from hacenada.script import Script
 
 
@@ -15,7 +16,7 @@ class SessionOptions:
     Options for a Session
     """
 
-    renderer: render.Render
+    renderer: Render
 
 
 @attr.s(auto_attribs=True, slots=True)

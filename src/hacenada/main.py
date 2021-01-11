@@ -37,11 +37,13 @@ https://blog.danslimmon.com/2019/07/15/do-nothing-scripting-the-key-to-gradual-a
 """
 import json
 import pathlib
+import typing
 
 import click
 import toml
 
 from hacenada import render, script, session, storage
+from hacenada.abstract import SessionStorage
 from hacenada.error import StorageError
 
 
@@ -49,7 +51,7 @@ def handle_filename(_, param, value):
     """
     Process the filename argument
 
-    Raise a UsageError when the file is missing unless the param has default=None
+    Raise a UsageError when the file is missing unless the param is not required
     """
     if value is None:
         if not param.required:
@@ -57,8 +59,6 @@ def handle_filename(_, param, value):
         raise click.UsageError("** FILENAME is required")
 
     value = pathlib.Path(value)
-    if not param.required:
-        return value
 
     if value.exists():
         return value
@@ -80,6 +80,20 @@ def hacenada():
     """
 
 
+def _find_storage_somehow(filename) -> typing.Tuple[pathlib.Path, SessionStorage]:
+    """
+    With no filename argument given, try to determine storage location
+    """
+    try:
+        if filename:
+            return (filename, storage.HomeDirectoryStorage.from_path(filename))
+        else:
+            _store = storage.HomeDirectoryStorage.from_cwd()
+            return (pathlib.Path(_store.script_path), _store)
+    except StorageError as e:
+        raise click.UsageError(str(e))
+
+
 @hacenada.command()
 @filename_arg(required=False)
 def next(filename):
@@ -92,14 +106,7 @@ def next(filename):
     With no FILENAME, look for any continuation file, and continue it.
     This is an error if there are multiple continuation files, or none.
     """
-    try:
-        if filename:
-            _store = storage.HomeDirectoryStorage.from_path(filename)
-        else:
-            _store = storage.HomeDirectoryStorage.from_cwd()
-            filename = _store.script_path
-    except StorageError as e:
-        raise click.UsageError(str(e))
+    filename, _store = _find_storage_somehow(filename)
 
     _opt = session.SessionOptions(renderer=render.PyInquirerRender())
     _script = script.Script.from_scriptfile(filename)
@@ -115,21 +122,17 @@ def start(filename, starting_over):
     """
     Begin a new session after opening filename.
     """
-    try:
-        _store = storage.HomeDirectoryStorage.from_path(filename)
-
-        if starting_over:
-            _store.drop()
-            _store = storage.HomeDirectoryStorage.from_path(filename)
-    except StorageError as e:
-        raise click.UsageError(str(e))
+    if starting_over:
+        storage.HomeDirectoryStorage.drop_path(filename)
+    _store = storage.HomeDirectoryStorage.from_path(filename)
 
     _script = script.Script.from_scriptfile(filename)
     _opt = session.SessionOptions(renderer=render.PyInquirerRender())
     sesh = session.Session(script=_script, storage=_store, options=_opt)
     if sesh.started and not starting_over:
         raise click.UsageError(
-            f"** {_store} already contains some answers, will not overwrite an ongoing session without --start-over"
+            f"** <{filename}-storage> already contains some answers, "
+            "will not overwrite an ongoing session without --start-over"
         )
 
     sesh.step_session()
@@ -149,11 +152,10 @@ def print_script(filename, format, with_answers):
     With --answers (the default), include the answers from the current session
     """
 
-    if filename:
-        _store = storage.HomeDirectoryStorage.from_path(filename)
+    if with_answers:
+        filename, _store = _find_storage_somehow(filename)
     else:
-        _store = storage.HomeDirectoryStorage.from_cwd()
-        filename = _store.script_path
+        _store = None
 
     _script = script.Script.from_scriptfile(filename)
 
@@ -166,15 +168,17 @@ def print_script(filename, format, with_answers):
 def print_toml(script, storage):
     print(toml.dumps({"hacenada": script.preamble}))
     print(toml.dumps({"step": script.raw_steps}))
-    print(toml.dumps({"answer": storage.answer.all()}))
+    if storage:
+        print(toml.dumps({"answer": storage.answer.all()}))
 
 
 def print_json(script, storage):
     ret = dict(
         hacenada=script.preamble,
         step=script.raw_steps,
-        answer=storage.answer.all(),
     )
+    if storage:
+        ret["answer"] = storage.answer.all()
     print(json.dumps(ret, indent=2))
 
 
@@ -184,7 +188,7 @@ def print_markdown(script, storage):
     """
     print(f"# {script.preamble['name'] or storage.script_path}\n")
     print(f"{script.preamble['description'] or ''}\n")
-    if storage.description:
+    if storage and storage.description:
         desc = storage.description.replace("\n", " ").strip()
         print(f"### Current: **{desc}**\n")
 
@@ -194,9 +198,10 @@ def print_markdown(script, storage):
         print(f"[{label}]  {step['message'].strip()}\n")
         # TODO: depending on step['type'], format and print interactive choices
 
-        _answered = storage.get_answer(label)
-        if _answered:
-            print(f"➡️➡️**{_answered['value']}**\n")
+        if storage:
+            _answered = storage.get_answer(label)
+            if _answered:
+                print(f"➡️➡️**{_answered['value']}**\n")
 
         if step["stop"]:
             print("------\n")

@@ -24,7 +24,8 @@ class Script:
     raw_steps: list = attr.Factory(list)
     overlay: list = attr.Factory(list)  # steps after preprocessing
 
-    def autolabel(self, step, n):
+    @staticmethod
+    def autolabel(step, n):
         return f'{step["type"]}-{n}'
 
     def preprocess_steps(self, steps: typing.List[typing.Dict]) -> typing.List[Step]:

@@ -7,7 +7,8 @@ import pathlib
 import typing
 
 import attr
-import tinydb
+from tinydb import TinyDB, table, where
+from typing_extensions import TypedDict
 
 from hacenada import error
 from hacenada.abstract import SessionStorage
@@ -16,6 +17,11 @@ from hacenada.const import STR_DICT
 
 ENCODING = "utf-8"
 HACENADA_HOME = pathlib.Path.home() / ".hacenada"
+
+
+class Answer(TypedDict, total=True):
+    label: str
+    value: typing.Any
 
 
 def _normalize_path(pth: pathlib.Path, suffix: typing.Optional[str] = None) -> str:
@@ -28,7 +34,7 @@ def _normalize_path(pth: pathlib.Path, suffix: typing.Optional[str] = None) -> s
         pth = pth.with_suffix(suffix)
 
     s = str(pth)
-    return s.lstrip("/").replace("/", "__")
+    return s.strip("/").replace("/", "__")
 
 
 @attr.s(auto_attribs=True)
@@ -37,9 +43,9 @@ class HomeDirectoryStorage(SessionStorage):
     Access to session storage through a tinydb in a known location in $HOME
     """
 
-    db: tinydb.TinyDB
-    answer: tinydb.table.Table
-    meta: tinydb.table.Table
+    db: TinyDB
+    answer: table.Table
+    meta: table.Table
 
     def to_structured(self):
         return dict(meta=self.meta.all()[0], answer=self.answer.all())
@@ -84,7 +90,7 @@ class HomeDirectoryStorage(SessionStorage):
         SessionStorage from a Path to a .json tinydb
         """
         path.parent.mkdir(parents=True, exist_ok=True)
-        db = tinydb.TinyDB(path)
+        db = TinyDB(path)
         answer = db.table("answer")
         meta = db.table("meta")
         if len(meta) == 0:
@@ -95,12 +101,9 @@ class HomeDirectoryStorage(SessionStorage):
         """
         Save one answer to tinydb
         """
-        Answer = tinydb.Query()
-        d = {}
-        for k, v in answer.items():
-            d["label"] = k
-            d["value"] = v
-        self.answer.upsert(d, Answer.label == list(answer.keys())[0])
+        k, v = list(answer.items())[0]
+        d = Answer(label=k, value=v)
+        self.answer.upsert(d, where("label") == list(answer.keys())[0])
 
     def update_meta(self, **kw):
         """
@@ -110,21 +113,22 @@ class HomeDirectoryStorage(SessionStorage):
         props.update(kw)
         self.meta.update(props)
 
-    def get_answer(self, label: str):
+    def get_answer(self, label: str) -> typing.Optional[Answer]:
         """
         Look up an answer by label string in tinydb
         """
-        Answer = tinydb.Query()
-        return self.answer.get(Answer.label == label)
+        ans = self.answer.get(where("label") == label)
+        return None if ans is None else Answer(label=ans["label"], value=ans["value"])
 
-    def drop(self):
+    @classmethod
+    def drop_path(cls, toml_path):
         """
-        Drop all items in the tinydb
+        Drop the storage corresponding to toml_path, which is a .toml filename
         """
-        self.db.truncate()
-        self.answer.truncate()
-        self.meta.truncate()
-        self.meta.insert({})
+        store = cls.from_path(toml_path)
+        store.answer.truncate()
+        store.meta.truncate()
+        store.meta.insert({})
 
     @property
     def description(self) -> str:
@@ -145,7 +149,7 @@ class HomeDirectoryStorage(SessionStorage):
         """
         The meta script_path of the session
         """
-        return self.meta.all()[0]["script_path"]
+        return self.meta.all()[0].get("script_path", "")
 
     @script_path.setter
     def script_path(self, value: str):

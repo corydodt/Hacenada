@@ -43,12 +43,6 @@ class SessionStorage(ABC):
         Look up a single answer by str
         """
 
-    @abstractmethod
-    def drop(self):
-        """
-        Delete all items in the storage
-        """
-
 
 class Render(ABC):
     """
