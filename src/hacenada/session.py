@@ -4,9 +4,9 @@ Read/write from the .session file, manage which step we're on, manage logs
 
 import attr
 
-from hacenada import render
-from hacenada.script import Script
+from hacenada import error, render
 from hacenada.abstract import SessionStorage
+from hacenada.script import Script
 
 
 @attr.s(auto_attribs=True)
@@ -40,7 +40,12 @@ class Session:
         remaining = self.script.overlay[index:]
 
         for step in remaining:
-            q_a = self.options.renderer.render(step, context=self)
+            try:
+                q_a = self.options.renderer.render(step, context=self)
+            except error.Unanswered:
+                print(f"** Canceled at {step['label']}")
+                return
+
             self.storage.save_answer(q_a)
             posthandler = getattr(self, f"post_{step['type']}", lambda *a: None)
             posthandler(step["label"], step["type"], q_a[step["label"]])

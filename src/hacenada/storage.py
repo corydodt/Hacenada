@@ -9,8 +9,9 @@ import typing
 import attr
 import tinydb
 
-from hacenada.const import STR_DICT
+from hacenada import error
 from hacenada.abstract import SessionStorage
+from hacenada.const import STR_DICT
 
 
 ENCODING = "utf-8"
@@ -68,8 +69,13 @@ class HomeDirectoryStorage(SessionStorage):
         cwd = pathlib.Path.cwd()
         normal = _normalize_path(cwd, "")
         any_json = list(HACENADA_HOME.glob(f"{normal}*.json"))
-        assert len(any_json) < 2, f"Multiple possible storages found: {any_json}"
-        assert len(any_json) == 1, f"No possible storage found corresponding to {cwd}"
+        if len(any_json) > 1:
+            raise error.MultipleNextFound(
+                f"Multiple possible storages found: {any_json}"
+            )
+        elif len(any_json) <= 0:
+            raise error.NoNextFound(f"No possible storage found corresponding to {cwd}")
+
         return cls._from_json_path(any_json[0])
 
     @classmethod

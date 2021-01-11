@@ -3,21 +3,11 @@ Render (or execute) steps
 """
 import PyInquirer as pyinquirer
 
+from hacenada import error
 from hacenada.abstract import Render
 from hacenada.const import STR_DICT
 from hacenada.script import Step
 from hacenada.session import Session
-
-
-class StopRendering(Exception):
-    """
-    Indicates that a step wants to stop execution and save
-
-    i.e. step['stop'] == True
-    """
-
-    def __init__(self, step):
-        self.step = step
 
 
 class PyInquirerRender(Render):
@@ -58,5 +48,9 @@ class PyInquirerRender(Render):
         ]
         _pyinq_answers: STR_DICT = {}  # TODO
         pyinq_answers = pyinquirer.prompt(questions=qs, answers=_pyinq_answers)
+
+        answered = pyinq_answers.get(step["label"])
+        if answered is None:
+            raise error.Unanswered(f"{step['label']} not answered - User Canceled?")
 
         return {step["label"]: pyinq_answers[step["label"]]}

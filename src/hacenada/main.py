@@ -42,6 +42,7 @@ import click
 import toml
 
 from hacenada import render, script, session, storage
+from hacenada.error import StorageError
 
 
 def handle_filename(_, param, value):
@@ -91,11 +92,14 @@ def next(filename):
     With no FILENAME, look for any continuation file, and continue it.
     This is an error if there are multiple continuation files, or none.
     """
-    if filename:
-        _store = storage.HomeDirectoryStorage.from_path(filename)
-    else:
-        _store = storage.HomeDirectoryStorage.from_cwd()
-        filename = _store.script_path
+    try:
+        if filename:
+            _store = storage.HomeDirectoryStorage.from_path(filename)
+        else:
+            _store = storage.HomeDirectoryStorage.from_cwd()
+            filename = _store.script_path
+    except StorageError as e:
+        raise click.UsageError(str(e))
 
     _opt = session.SessionOptions(renderer=render.PyInquirerRender())
     _script = script.Script.from_scriptfile(filename)
@@ -111,10 +115,14 @@ def start(filename, starting_over):
     """
     Begin a new session after opening filename.
     """
-    _store = storage.HomeDirectoryStorage.from_path(filename)
-    if starting_over:
-        _store.drop()
+    try:
         _store = storage.HomeDirectoryStorage.from_path(filename)
+
+        if starting_over:
+            _store.drop()
+            _store = storage.HomeDirectoryStorage.from_path(filename)
+    except StorageError as e:
+        raise click.UsageError(str(e))
 
     _script = script.Script.from_scriptfile(filename)
     _opt = session.SessionOptions(renderer=render.PyInquirerRender())
@@ -150,6 +158,7 @@ def print_script(filename, format, with_answers):
     _script = script.Script.from_scriptfile(filename)
 
     from hacenada import main
+
     printer = getattr(main, f"print_{format}")
     printer(_script, _store)
 
@@ -176,7 +185,7 @@ def print_markdown(script, storage):
     print(f"# {script.preamble['name'] or storage.script_path}\n")
     print(f"{script.preamble['description'] or ''}\n")
     if storage.description:
-        desc = storage.description.replace('\n', ' ').strip()
+        desc = storage.description.replace("\n", " ").strip()
         print(f"### Current: **{desc}**\n")
 
     print("## Steps\n")
