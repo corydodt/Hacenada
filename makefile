@@ -12,10 +12,6 @@ format: # reformat source python files
 	black setup.py src
 
 
-test: # run automated tests
-	tox
-
-
 requirements.txt: setup.py
 	python3 -m venv _virtual_tmp
 	. _virtual_tmp/bin/activate \
