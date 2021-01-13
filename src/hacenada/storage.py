@@ -8,9 +8,8 @@ import typing
 
 import attr
 from tinydb import TinyDB, table, where
-from typing_extensions import TypedDict
 
-from hacenada import error
+from hacenada import compat, error
 from hacenada.abstract import SessionStorage
 from hacenada.const import STR_DICT
 
@@ -19,7 +18,7 @@ ENCODING = "utf-8"
 HACENADA_HOME = pathlib.Path.home() / ".hacenada"
 
 
-class Answer(TypedDict, total=True):
+class Answer(compat.TypedDict, total=True):
     label: str
     value: typing.Any
 

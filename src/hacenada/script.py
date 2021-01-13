@@ -6,8 +6,10 @@ import typing
 import attr
 import toml
 
+from hacenada import compat
 
-class Step(typing.TypedDict, total=False):
+
+class Step(compat.TypedDict, total=False):
     type: str
     message: str
     label: str

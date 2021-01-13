@@ -14,7 +14,7 @@ data = {
         "attrs",
         "click",
         "codado",
-        "mypy_extensions; python_version < '3.8'",
+        "typing_extensions; python_version < '3.8'",
         "pyinquirer",
         "tinydb",
         "toml",
