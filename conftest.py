@@ -79,7 +79,7 @@ def storagie(my_project: Path):
 
     ret = storage.HomeDirectoryStorage.from_path(my_project)
 
-    assert ret.script_path == str(my_project)
+    assert ret.script_path == my_project
     normaled = storage._normalize_path(my_project, ".json")
     assert (storage.HACENADA_HOME / f"{normaled}").exists()
 

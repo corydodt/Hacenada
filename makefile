@@ -8,8 +8,8 @@ SNAP_TARGET		:= $(curdir)/hacenada_$(VERSION)_$(CPU_TYPE).snap
 
 
 format: # reformat source python files
-	isort setup.py src
-	black setup.py src
+	isort conftest.py setup.py src
+	black conftest.py setup.py src
 
 
 requirements.txt: setup.py
