@@ -2,6 +2,7 @@
 Abstract types
 """
 from abc import ABC, abstractmethod
+import typing
 
 from hacenada.const import STR_DICT
 
@@ -10,6 +11,25 @@ class SessionStorage(ABC):
     """
     Provide access to the session's underlying storage through any mechanism
     """
+
+    answer: typing.Any
+    meta: typing.Any
+
+    @property
+    def script_path(self):
+        """
+        The path to the script associated with this storage
+
+        Concrete method, implementing this is optional
+        """
+
+    @script_path.setter
+    def script_path(self, value):
+        """
+        Set the path to the script associated with this storage
+
+        Concrete method, implementing this is optional
+        """
 
     @property  # type: ignore
     @abstractmethod
@@ -41,6 +61,13 @@ class SessionStorage(ABC):
     def get_answer(self, label: str):
         """
         Look up a single answer by str
+        """
+
+    def drop(self):
+        """
+        Delete the storage
+
+        Concrete method, implementing this is optional
         """
 
 
