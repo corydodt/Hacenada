@@ -40,7 +40,7 @@ def test_from_cwd(my_project):
     storage.HomeDirectoryStorage.from_path(my_project)
 
     stor = storage.HomeDirectoryStorage.from_cwd()
-    assert stor.script_path == str(my_project)
+    assert stor.script_path == my_project
     normaled = storage._normalize_path(my_project, ".json")
     assert (storage.HACENADA_HOME / f"{normaled}").exists()
 
@@ -68,8 +68,8 @@ def test_save_get_meta(storagie):
     storagie.description = "hello there"
     assert storagie.description == "hello there"
 
-    storagie.script_path = "oh/no"
-    assert storagie.script_path == "oh/no"
+    storagie.script_path = Path("oh/no")
+    assert storagie.script_path == Path("oh/no")
 
 
 def test_to_structured(storagie):
@@ -84,7 +84,7 @@ def test_to_structured(storagie):
         ],
         meta=dict(
             description="hello there",
-            script_path=storagie.script_path,
+            script_path=str(storagie.script_path),
         ),
     )
 

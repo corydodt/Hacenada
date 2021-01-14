@@ -56,7 +56,7 @@ class HomeDirectoryStorage(SessionStorage):
         """
         normal = _normalize_path(path.absolute(), suffix=".json")
         self = cls._from_json_path(HACENADA_HOME / normal)
-        self.script_path = str(path)
+        self.script_path = path
         return self
 
     #  @classmethod
@@ -76,7 +76,7 @@ class HomeDirectoryStorage(SessionStorage):
         any_json = list(HACENADA_HOME.glob(f"{normal}*.json"))
         if len(any_json) > 1:
             raise error.MultipleNextFound(
-                f"Multiple possible storages found: {any_json}"
+                f"Multiple possible storages found: {[str(p) for p in any_json]}"
             )
         elif len(any_json) <= 0:
             raise error.NoNextFound(f"No possible storage found corresponding to {cwd}")
@@ -144,15 +144,15 @@ class HomeDirectoryStorage(SessionStorage):
         self.update_meta(description=value)
 
     @property
-    def script_path(self) -> str:
+    def script_path(self) -> pathlib.Path:
         """
         The meta script_path of the session
         """
-        return self.meta.all()[0].get("script_path", "")
+        return pathlib.Path(self.meta.all()[0].get("script_path", ""))
 
     @script_path.setter
-    def script_path(self, value: str):
+    def script_path(self, value: pathlib.Path):
         """
         Set the meta script_path of the session in tinydb
         """
-        self.update_meta(script_path=value)
+        self.update_meta(script_path=str(value))
