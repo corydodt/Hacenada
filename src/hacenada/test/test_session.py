@@ -3,7 +3,7 @@ Do we manage a session properly?
 """
 from unittest.mock import ANY, MagicMock, call, create_autospec
 
-from pytest import fixture
+from pytest import fixture, raises
 
 from hacenada import abstract, error, session
 
@@ -44,7 +44,9 @@ def test_step_session(sesho):
     """
     sesho.storage.answer = ["skipping_first_question"]
     sesho.options.renderer.render.return_value = {"message-1": "True"}
-    sesho.step_session()
+    with raises(error.ScriptFinished):
+        sesho.step_session()
+
     # were we shown the second question first?
     assert sesho.options.renderer.render.call_args_list[0] == call(
         {"label": "message-1", "message": ANY, "stop": ANY, "type": "message"},

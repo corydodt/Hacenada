@@ -21,6 +21,12 @@ class NoNextFound(StorageError):
     """
 
 
+class ScriptFinished(Exception):
+    """
+    Signal that the interpreter reached the end of the script
+    """
+
+
 class RenderError(Exception):
     """
     Base for all rendering-related errors

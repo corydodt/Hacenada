@@ -31,6 +31,9 @@ class Session:
 
     @property
     def started(self):
+        """
+        Have we previously started this session (there are previous answers?)
+        """
         return len(self.storage.answer) > 0
 
     def step_session(self):
@@ -40,7 +43,8 @@ class Session:
         index = len(self.storage.answer)
         remaining = self.script.overlay[index:]
 
-        for step in remaining:
+        while remaining:
+            step = remaining.pop(0)
             try:
                 q_a = self.options.renderer.render(step, context=self)
             except error.Unanswered:
@@ -52,6 +56,10 @@ class Session:
             posthandler(step["label"], step["type"], q_a[step["label"]])
             if step["stop"]:
                 break
+
+        # did we reach the end?
+        if len(remaining) == 0:
+            raise error.ScriptFinished("all steps have been seen")
 
         print("---------------")
 
