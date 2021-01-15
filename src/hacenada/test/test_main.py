@@ -9,7 +9,7 @@ import click
 from click.testing import CliRunner
 from pytest import fixture, mark, raises
 
-from hacenada import main
+from hacenada import main, error
 
 
 @fixture
@@ -147,6 +147,13 @@ def test_start(runner: CliRunner, my_project: pathlib.Path):
         invoked = runner.invoke(main.start, ["--start-over", "project.toml"])
     assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
 
+    # start again. this is a hack to make the first question appear to be the last question
+    # so we can see what happens when we use `start` and we're already done
+    with patch("hacenada.session.Session.step_session", side_effect=error.ScriptFinished):
+        invoked = runner.invoke(main.start, ["--start-over", "project.toml"])
+    assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
+    assert "project.toml: Cleaning up.  Log: " in invoked.stdout
+
 
 def test_next(runner: CliRunner, my_project: pathlib.Path, storagie):
     """
@@ -164,6 +171,7 @@ def test_next(runner: CliRunner, my_project: pathlib.Path, storagie):
         invoked = runner.invoke(main.next)
     assert storagie.get_answer("message-1")["value"] == "yes"
     assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
+    assert "project.toml: Cleaning up.  Log: " in invoked.stdout
 
     # this invocation fails, storage file has disappeared
     for found in my_project.parent.parent.glob("*.json"):

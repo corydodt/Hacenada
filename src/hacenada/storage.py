@@ -20,7 +20,7 @@ ENCODING = "utf-8"
 HACENADA_HOME = pathlib.Path.home() / ".hacenada"
 
 
-class Answer(compat.TypedDict, total=True):
+class Answer(compat.TypedDict):
     label: str
     value: typing.Any
     when: datetime.datetime

@@ -9,7 +9,7 @@ import toml
 from hacenada import compat
 
 
-class Step(compat.TypedDict, total=False):
+class Step(compat.TypedDict):
     type: str
     message: str
     label: str

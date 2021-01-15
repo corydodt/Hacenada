@@ -198,7 +198,7 @@ def _json_default_datetime(o):
     """
     if isinstance(o, datetime.datetime):
         return o.isoformat()
-    return o
+    raise TypeError(f"can't encode {o!r}")  # pragma: nocover
 
 
 def format_markdown(script: script.Script, storage: SessionStorage) -> str:
@@ -224,7 +224,6 @@ def format_markdown(script: script.Script, storage: SessionStorage) -> str:
         if storage:
             _answered = storage.get_answer(label)
             if _answered:
-                from dateutil.tz import tzlocal
                 local_when = _answered["when"].astimezone().ctime()
                 print(f"️**>> {_answered['value']} <<** ({local_when})\n", file=_io)
 
