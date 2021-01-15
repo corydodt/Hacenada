@@ -225,7 +225,7 @@ def format_markdown(script: script.Script, storage: SessionStorage) -> str:
             _answered = storage.get_answer(label)
             if _answered:
                 local_when = _answered["when"].astimezone().ctime()
-                print(f"️**>> {_answered['value']} <<** ({local_when})\n", file=_io)
+                print(f"**>> {_answered['value']} <<** ({local_when})\n", file=_io)
 
         if step["stop"]:
             print("------\n", file=_io)
