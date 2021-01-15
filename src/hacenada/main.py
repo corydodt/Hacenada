@@ -7,44 +7,39 @@ https://blog.danslimmon.com/2019/07/15/do-nothing-scripting-the-key-to-gradual-a
     1. Load a template from the input file
     2. prompt for a description (optional)
     3. display the description and display the next question from .hacenada.tpl
-    4. if the question is answered in a certain way (or at all), save to .hacenada.step
+    4. if the question is answered in a certain way (or at all), save to a home directory storage db
     5. exit
 
-    6. on the next run, look for .hacenada.step. if it doesn't exist we're starting at step 1.
-    7. if we have .hacenada.step, look up the next step
-    8. if there is a next step, repeat at step 3.
-    9. if not, we're done. write a log file:
-        - create hacenada-logs
-        - add a file there that uses the date and description field as the logfile name
-        - write a human-readable description of what happened to that log
-
+    6. on the next run, look for the storage db and continue.
+    7. if there is a next step, repeat at step 3.
+    8. if not, we're done. write a log file:
+        - create template-filename.log.d/{date}-{n}--{description}.log
+        - write two log versions: markdown and json
 
     - should be able to mark fields as passwords/secrets (hidden in log)
     - should be able to say a text field is required (e.g. you must put in a username before it continues)
     - can automate a step away completely
 
-    - how to establish continuity between versions, e.g. if a template has changed from one run to the next
-        (probably encode a version of the original template into the .hacenada.step file)
     - --start-over will let you discard a run in process. this writes the (incomplete) log to the logs dir as
         if you had finished.
-    - use codado.hotedit for interactive editor steps
 
     - challenges: it needs to be easy/lightweight for an operator to run a script. The script already
       imports several third-party libraries and I haven't even written any code yet.
       minimize dependencies or have a canonical way (like a curl-pipe-bash installer?)
-
-      Could also be a snap install!
 """
+import datetime
+import io
 import json
 import pathlib
 import typing
+import urllib
 
 import click
 import toml
 
 from hacenada import render, script, session, storage
 from hacenada.abstract import SessionStorage
-from hacenada.error import StorageError
+from hacenada.error import ScriptFinished, StorageError
 
 
 def handle_filename(_, param, value):
@@ -112,7 +107,10 @@ def next(filename):
     _script = script.Script.from_scriptfile(filename)
     sesh = session.Session(script=_script, storage=_store, options=_opt)
 
-    sesh.step_session()
+    try:
+        sesh.step_session()
+    except ScriptFinished:
+        _log_and_cleanup(sesh)
 
 
 @hacenada.command()
@@ -135,7 +133,10 @@ def start(filename, starting_over):
             "will not overwrite an ongoing session without --start-over"
         )
 
-    sesh.step_session()
+    try:
+        sesh.step_session()
+    except ScriptFinished:
+        _log_and_cleanup(sesh)
 
 
 FORMAT_CHOICES = ("toml", "json", "markdown")
@@ -161,47 +162,102 @@ def print_script(filename, format, with_answers):
 
     from hacenada import main
 
-    printer = getattr(main, f"print_{format}")
-    printer(_script, _store)
+    formatter = getattr(main, f"format_{format}")
+    print(formatter(_script, _store))
 
 
-def print_toml(script, storage):
-    print(toml.dumps({"hacenada": script.preamble}))
-    print(toml.dumps({"step": script.raw_steps}))
+def format_toml(script: script.Script, storage: SessionStorage) -> str:
+    """
+    Format the steps and answers as TOML
+    """
+    _io = io.StringIO()
+    print(toml.dumps({"hacenada": script.preamble}), file=_io)
+    print(toml.dumps({"step": script.raw_steps}), file=_io)
     if storage:
-        print(toml.dumps({"answer": storage.answer.all()}))
+        print(toml.dumps({"answer": storage.answer.all()}), file=_io)
+
+    return _io.getvalue()
 
 
-def print_json(script, storage):
+def format_json(script: script.Script, storage: SessionStorage) -> str:
+    """
+    Format the steps and answers as json
+    """
     ret = dict(
         hacenada=script.preamble,
         step=script.raw_steps,
     )
     if storage:
         ret["answer"] = storage.answer.all()
-    print(json.dumps(ret, indent=2))
+    return json.dumps(ret, indent=2, default=_json_default_datetime)
 
 
-def print_markdown(script, storage):
+def _json_default_datetime(o):
     """
-    Markdown formatting interleaves questions with answers to produce a human-readable document
+    Json dumper for datetimes
     """
-    print(f"# {script.preamble['name'] or storage.script_path}\n")
-    print(f"{script.preamble['description'] or ''}\n")
+    if isinstance(o, datetime.datetime):
+        return o.isoformat()
+    return o
+
+
+def format_markdown(script: script.Script, storage: SessionStorage) -> str:
+    """
+    Form steps and answers as markdown
+
+    Markdown formatting interleaves questions with answers to produce a
+    human-readable document
+    """
+    _io = io.StringIO()
+    print(f"# {script.preamble['name'] or storage.script_path}\n", file=_io)
+    print(f"{script.preamble['description'] or ''}\n", file=_io)
     if storage and storage.description:
         desc = storage.description.replace("\n", " ").strip()
-        print(f"### Current: **{desc}**\n")
+        print(f"### Current: **{desc}**\n", file=_io)
 
-    print("## Steps\n")
+    print("## Steps\n", file=_io)
     for step in script.overlay:
         label = step["label"]
-        print(f"[{label}]  {step['message'].strip()}\n")
+        print(f"[{label}]  {step['message'].strip()}\n", file=_io)
         # TODO: depending on step['type'], format and print interactive choices
 
         if storage:
             _answered = storage.get_answer(label)
             if _answered:
-                print(f"➡️➡️**{_answered['value']}**\n")
+                from dateutil.tz import tzlocal
+                local_when = _answered["when"].astimezone().ctime()
+                print(f"️**>> {_answered['value']} <<** ({local_when})\n", file=_io)
 
         if step["stop"]:
-            print("------\n")
+            print("------\n", file=_io)
+
+    return _io.getvalue()
+
+
+def _log_path(script_path: pathlib.Path, description: str) -> pathlib.Path:
+    """
+    What filename will the log for this session have?
+    """
+    logd_path = script_path.with_suffix(".log.d")
+    logd_path.mkdir(exist_ok=True)
+    dt = datetime.date.today().isoformat()
+    counter = len(list(logd_path.glob(f"{dt}*.log"))) + 1
+    # make the description more url-like
+    desc = urllib.parse.quote_plus(" ".join(description.split()))
+
+    return logd_path / f"{dt}-{counter}--{desc}.log"
+
+
+def _log_and_cleanup(sesh: session.Session):
+    """
+    When done, write some logs and drop the db
+    """
+    log_md = format_markdown(sesh.script, sesh.storage)
+    fn_md = _log_path(sesh.storage.script_path, sesh.storage.description)
+    fn_md.write_text(log_md)
+    log_json = format_json(sesh.script, sesh.storage)
+    fn_json = fn_md.with_suffix(".json")
+    fn_json.write_text(log_json)
+
+    print(f"{sesh.storage.script_path}: Cleaning up.  Log: {fn_md}")
+    sesh.storage.drop()

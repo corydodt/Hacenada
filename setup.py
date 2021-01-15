@@ -14,6 +14,7 @@ data = {
         "attrs",
         "click",
         "codado",
+        "tinydb-serialization",
         "typing_extensions; python_version < '3.8'",
         "pyinquirer",
         "tinydb",

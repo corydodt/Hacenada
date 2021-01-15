@@ -3,11 +3,13 @@ Built-in storage abstractions
 """
 from __future__ import annotations
 
+import datetime
 import pathlib
 import typing
 
 import attr
 from tinydb import TinyDB, table, where
+from tinydb_serialization import SerializationMiddleware, Serializer
 
 from hacenada import compat, error
 from hacenada.abstract import SessionStorage
@@ -21,6 +23,7 @@ HACENADA_HOME = pathlib.Path.home() / ".hacenada"
 class Answer(compat.TypedDict, total=True):
     label: str
     value: typing.Any
+    when: datetime.datetime
 
 
 def _normalize_path(pth: pathlib.Path, suffix: typing.Optional[str] = None) -> str:
@@ -89,7 +92,7 @@ class HomeDirectoryStorage(SessionStorage):
         SessionStorage from a Path to a .json tinydb
         """
         path.parent.mkdir(parents=True, exist_ok=True)
-        db = TinyDB(path)
+        db = _new_db(path)
         answer = db.table("answer")
         meta = db.table("meta")
         if len(meta) == 0:
@@ -101,7 +104,7 @@ class HomeDirectoryStorage(SessionStorage):
         Save one answer to tinydb
         """
         k, v = list(answer.items())[0]
-        d = Answer(label=k, value=v)
+        d = Answer(label=k, value=v, when=datetime.datetime.now())
         self.answer.upsert(d, where("label") == list(answer.keys())[0])
 
     def update_meta(self, **kw):
@@ -117,7 +120,10 @@ class HomeDirectoryStorage(SessionStorage):
         Look up an answer by label string in tinydb
         """
         ans = self.answer.get(where("label") == label)
-        return None if ans is None else Answer(label=ans["label"], value=ans["value"])
+        if ans is None:
+            return None
+
+        return Answer(label=ans["label"], value=ans["value"], when=ans["when"])
 
     @classmethod
     def drop_path(cls, toml_path):
@@ -156,3 +162,30 @@ class HomeDirectoryStorage(SessionStorage):
         Set the meta script_path of the session in tinydb
         """
         self.update_meta(script_path=str(value))
+
+
+class DateTimeSerializer(Serializer):
+    """
+    Round trip datetimes (which are also timezone-aware) through tinydb
+    """
+    OBJ_CLASS = datetime.datetime
+
+    def encode(self, obj: datetime.datetime) -> str:
+        if obj.tzinfo is None:
+            # naive == local timezone. insert utc timezone and adjust
+            obj = obj.astimezone(datetime.timezone.utc)
+        return obj.isoformat()
+
+    def decode(self, s: str) -> datetime.datetime:
+        ret = datetime.datetime.fromisoformat(s)
+        assert ret.tzinfo is not None
+        return ret
+
+
+def _new_db(path: pathlib.Path) -> TinyDB:
+    """
+    Construct a TinyDB with our customizations
+    """
+    serialization = SerializationMiddleware()
+    serialization.register_serializer(DateTimeSerializer(), 'TinyDate')
+    return TinyDB(path, storage=serialization)

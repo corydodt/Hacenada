@@ -133,3 +133,5 @@ dmypy.json
 
 
 *.snap
+
+*.log.d

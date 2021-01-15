@@ -2,6 +2,7 @@
 Tests that we can interact with storage
 """
 from pathlib import Path
+from unittest.mock import ANY
 
 from pytest import mark, raises
 
@@ -57,7 +58,7 @@ def test_save_get_answer(storagie):
     """
     storagie.save_answer({"q1": "a1"})
     assert len(storagie.answer) == 1
-    assert storagie.get_answer("q1") == storage.Answer(label="q1", value="a1")
+    assert storagie.get_answer("q1") == storage.Answer(label="q1", value="a1", when=ANY)
 
 
 def test_save_get_meta(storagie):
@@ -79,8 +80,8 @@ def test_to_structured(storagie):
 
     assert storagie.to_structured() == dict(
         answer=[
-            storage.Answer(label="q1", value="a1"),
-            storage.Answer(label="q2", value="a 2"),
+            storage.Answer(label="q1", value="a1", when=ANY),
+            storage.Answer(label="q2", value="a 2", when=ANY),
         ],
         meta=dict(
             description="hello there",

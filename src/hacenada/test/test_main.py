@@ -62,7 +62,7 @@ INVOCATION_MATCHERS = {
         r'^{\s+"hacenada":.*to it".*"answer": \[\s*{\s*"label".*$', re.M | re.DOTALL
     ),
     "print-markdown-answers": re.compile(
-        r"^# hola.*oh noo\n\n.*\*\*hello description\*\*\n\n---", re.M | re.DOTALL
+        r"^# hola.*oh noo\n\n.*\*\*>> hello description <<\*\* \(.*\)\n\n---", re.M | re.DOTALL
     ),
 }
 
@@ -96,7 +96,7 @@ def test_print(
     storagie.save_answer({"q1": "hello description"})
     storagie.description = "hello description"
     invoked = runner.invoke(main.print_script, cli_args)
-    assert invoked.exit_code == 0, f"{invoked.exit_code}\n{invoked.stdout}\n"
+    assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
     match_output(invoked.stdout, output_id)
 
 
@@ -109,7 +109,7 @@ def test_print_filename_antics(runner: CliRunner, my_project: pathlib.Path, stor
 
     # this invocation succeeds because storage can be found
     invoked = runner.invoke(main.print_script, cli_args)
-    assert invoked.exit_code == 0, f"{invoked.exit_code}\n{invoked.stdout}\n"
+    assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
     assert re.search(r"hello description", invoked.stdout)
 
     storagie.db.close()
@@ -135,7 +135,7 @@ def test_start(runner: CliRunner, my_project: pathlib.Path):
     # start with no storage
     with p_render:
         invoked = runner.invoke(main.start, ["project.toml"])
-    assert invoked.exit_code == 0
+    assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
 
     # start again after answering 1 question
     invoked = runner.invoke(main.start, ["project.toml"])
@@ -145,7 +145,7 @@ def test_start(runner: CliRunner, my_project: pathlib.Path):
     # start again but use --start-over
     with p_render:
         invoked = runner.invoke(main.start, ["--start-over", "project.toml"])
-    assert invoked.exit_code == 0
+    assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
 
 
 def test_next(runner: CliRunner, my_project: pathlib.Path, storagie):
@@ -163,7 +163,7 @@ def test_next(runner: CliRunner, my_project: pathlib.Path, storagie):
     with p_render:
         invoked = runner.invoke(main.next)
     assert storagie.get_answer("message-1")["value"] == "yes"
-    assert invoked.exit_code == 0
+    assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
 
     # this invocation fails, storage file has disappeared
     for found in my_project.parent.parent.glob("*.json"):

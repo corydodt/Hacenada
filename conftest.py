@@ -4,7 +4,6 @@ Common fixtures
 import os
 from pathlib import Path
 import shutil
-
 from unittest.mock import patch
 
 from pytest import fixture
@@ -54,6 +53,7 @@ def scriptie(my_project):
     A fully-realized script object
     """
     from hacenada import script
+
     return script.Script.from_scriptfile(my_project)
 
 
