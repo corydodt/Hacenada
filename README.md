@@ -3,6 +3,19 @@
 Write do-nothing scripts in a declarative (ini) syntax
 
 
+## Roadmap
+
+- Steps:
+  - Add support for running bash (or python?) code, with answer=stdout/stderr
+  - Add support for input via choice inputs, text editor inputs
+
+- Rendering options:
+  - ipynb rendering support
+  - Display markdown more prettily in a text terminal
+
+- Backend options:
+  - cloud service for storage backend
+
 
 ## Change Log
 
