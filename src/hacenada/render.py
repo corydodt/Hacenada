@@ -22,6 +22,7 @@ class PyInquirerRender(Render):
         """
         return {
             "description": "input",
+            "input": "input",
             "editor": "editor",
             "message": "confirm",
             "confirm": "confirm",
