@@ -1,0 +1,77 @@
+[hacenada]
+
+name = "Cutting a new release of Hacenada"
+description = """
+Eating our own food:
+
+Until it's fully automated, this script will be used to guide the release process
+for Hacenada itself.
+"""
+
+[[step]]
+type = "description"
+message = "Describe the release (e.g. a version number)"
+
+[[step]]
+message = "Create a new release branch from main: `release/x.x.x`"
+
+[[step]]
+message = """
+In release/x.x.x:
+
+- update setup.py __version__
+"""
+
+[[step]]
+message = """
+- add entries to changelog
+- link to changes
+"""
+
+[[step]]
+message = """
+- Review docs
+"""
+
+[[step]]
+message = """
+- QA the code in the branch
+- Did automated tests pass?
+"""
+
+[[step]]
+message = """
+```
+setup.py sdist bdist_wheel
+twine upload
+```
+"""
+
+[[step]]
+message = """
+- tag the release branch
+```
+git tag -a -m "vx.x.x" vx.x.x
+git push --tags
+```
+"""
+
+[[step]]
+message = """
+Now,
+- update __version__ to `+dev`
+```
+git add setup.py
+git ci -m "meta: adding +dev to version"
+```
+"""
+
+[[step]]
+message = """
+- merge down from release branch into main
+"""
+
+[[step]]
+message = """
+- delete release branch
+"""
