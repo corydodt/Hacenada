@@ -9,7 +9,7 @@ import click
 from click.testing import CliRunner
 from pytest import fixture, mark, raises
 
-from hacenada import main, error
+from hacenada import error, main
 
 
 @fixture
@@ -62,7 +62,8 @@ INVOCATION_MATCHERS = {
         r'^{\s+"hacenada":.*to it".*"answer": \[\s*{\s*"label".*$', re.M | re.DOTALL
     ),
     "print-markdown-answers": re.compile(
-        r"^# hola.*oh noo\n\n.*\*\*>> hello description <<\*\* \(.*\)\n\n---", re.M | re.DOTALL
+        r"^# hola.*oh noo\n\n.*\*\*>> hello description <<\*\* \(.*\)\n\n---",
+        re.M | re.DOTALL,
     ),
 }
 
@@ -127,7 +128,7 @@ def test_start(runner: CliRunner, my_project: pathlib.Path):
     Do we handle all the states of starting and starting over?
     """
     p_render = patch(
-        "hacenada.render.PyInquirerRender.render",
+        "hacenada.render.InquirerRender.render",
         autospec=True,
         return_value={"q1": "descriptione"},
     )
@@ -149,7 +150,9 @@ def test_start(runner: CliRunner, my_project: pathlib.Path):
 
     # start again. this is a hack to make the first question appear to be the last question
     # so we can see what happens when we use `start` and we're already done
-    with patch("hacenada.session.Session.step_session", side_effect=error.ScriptFinished):
+    with patch(
+        "hacenada.session.Session.step_session", side_effect=error.ScriptFinished
+    ):
         invoked = runner.invoke(main.start, ["--start-over", "project.toml"])
     assert invoked.exit_code == 0, f"{invoked.exit_code} {invoked.exception}"
     assert "project.toml: Cleaning up.  Log: " in invoked.stdout
@@ -160,7 +163,7 @@ def test_next(runner: CliRunner, my_project: pathlib.Path, storagie):
     Do we handle all the states of starting and starting over?
     """
     p_render = patch(
-        "hacenada.render.PyInquirerRender.render",
+        "hacenada.render.InquirerRender.render",
         autospec=True,
         return_value={"message-1": "yes"},
     )

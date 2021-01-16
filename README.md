@@ -138,7 +138,7 @@ the whole session to `install-hacenada.log.d/`.
   * `description`: asks for the user to type in a description. This is saved
     like `input`, but the description is also displayed before each step (after
     this one), and also used as part of the log file name.
-  * **TODO**: `editor`, `choice`, `run`, others.
+  * **TODO**: `editor`, `choice`, `run`, `password`, others.
 
   It is recommended that you include a `type="description"` step somewhere
   near the beginning.

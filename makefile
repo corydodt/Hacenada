@@ -17,7 +17,7 @@ requirements.txt: setup.py
 	. _virtual_tmp/bin/activate \
 		&& pip install wheel \
 		&& pip install . \
-		&& pip freeze | grep -v hacenada > $@
+		&& pip freeze | grep -v [hH]acenada > $@
 	rm -rf _virtual_tmp
 
 

@@ -32,7 +32,7 @@ data = {
         "codado",
         "tinydb-serialization",
         "typing_extensions; python_version < '3.8'",
-        "pyinquirer",
+        "inquirer",
         "tinydb",
         "toml",
     ],

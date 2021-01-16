@@ -58,12 +58,3 @@ def test_step_session(sesho):
     sesho.options.renderer.render.return_value = {"q1": "description19"}
     sesho.step_session()
     assert sesho.storage.description == "description19"
-
-
-def test_step_session_unanswered(sesho, capsys):
-    """
-    Do we abort on Unanswered?
-    """
-    sesho.options.renderer.render.side_effect = error.Unanswered("oh no")
-    sesho.step_session()
-    assert capsys.readouterr()[0] == "** Canceled at q1\n"

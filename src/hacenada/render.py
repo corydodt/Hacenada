@@ -1,38 +1,43 @@
 """
 Render (or execute) steps
 """
-import PyInquirer as pyinquirer
+import typing
 
-from hacenada import error
+import inquirer
+
 from hacenada.abstract import Render
 from hacenada.const import STR_DICT
 from hacenada.script import Step
 from hacenada.session import Session
 
 
-class PyInquirerRender(Render):
+class InquirerRender(Render):
     """
-    Render to console using pyinquirer
+    Render to console using inquirer
     """
 
     @staticmethod
-    def _inquirer_type(typename: str) -> str:
+    def _inquirer_dispatch(typename: str) -> typing.Callable:
         """
         Return the inquirer question type for the given type name
         """
-        return {
-            "description": "input",
-            "input": "input",
-            "editor": "editor",
+        functions = {
+            "description": "text",
+            "input": "text",
             "message": "confirm",
             "confirm": "confirm",
-        }[typename]
+            # "editor": "editor",
+            # "choice": "choice",
+            # "password": "password",
+        }
+
+        return getattr(inquirer, functions[typename])
 
     def render(self, step: Step, context: Session) -> STR_DICT:
         """
         Output a question to a device
         """
-        pyinq_type = self._inquirer_type(step["type"])
+        pyinq_prompt = self._inquirer_dispatch(step["type"])
 
         if context.storage.description:
             title = f"{context.storage.description} : {step['label']}"
@@ -41,18 +46,7 @@ class PyInquirerRender(Render):
 
         message = f"{title}\n" f"{step['message']}\n>>"
 
-        qs = [
-            dict(
-                name=step["label"],
-                message=message,
-                type=pyinq_type,
-            )
-        ]
-        _pyinq_answers: STR_DICT = {}  # TODO
-        pyinq_answers = pyinquirer.prompt(questions=qs, answers=_pyinq_answers)
+        answered = pyinq_prompt(message)
 
-        answered = pyinq_answers.get(step["label"])
-        if answered is None:
-            raise error.Unanswered(f"{step['label']} not answered - User Canceled?")
-
-        return {step["label"]: pyinq_answers[step["label"]]}
+        # FIXME: just return an Answer here
+        return {step["label"]: answered}

@@ -1,24 +1,25 @@
 """
-Test the rendering mechanism to see if pyinquirer works
+Test the rendering mechanism to see if inquirer works
 """
-from unittest.mock import ANY, create_autospec, patch
+from unittest.mock import Mock, create_autospec, patch
 
-from pytest import fixture, raises
+import inquirer
+from pytest import fixture
 
-from hacenada import error, render, session
+from hacenada import render, session
 
 
 @fixture
 def renderer():
-    rr = render.PyInquirerRender()
+    rr = render.InquirerRender()
     return rr
 
 
 def test_inquirer_type(renderer):
     """
-    Do I look up pyinquirer question type by hacenada typename?
+    Do I look up inquirer question type by hacenada typename?
     """
-    assert renderer._inquirer_type("description") == "input"
+    assert renderer._inquirer_dispatch("description") is inquirer.text
 
 
 @fixture
@@ -35,27 +36,14 @@ def test_render(renderer, steppie, seshie):
     """
     Do I render questions to the screen?
     """
+    prompt = Mock(return_value="here we go")
     with patch.object(
-        render.pyinquirer, "prompt", autospec=True, return_value={"q1": "here we go"}
+        render.InquirerRender, "_inquirer_dispatch", autospec=True, return_value=prompt
     ) as m_prompt:
         ret = renderer.render(steppie, seshie)
 
-    m_prompt.assert_called_once_with(
-        questions=[
-            {"name": "q1", "message": "DESCRIPTION : q1\noh noo\n>>", "type": "input"}
-        ],
-        answers={},
-    )
+    m_prompt.return_value.assert_called_once_with("DESCRIPTION : q1\noh noo\n>>")
     assert ret == {"q1": "here we go"}
-
-
-def test_render_canceled(renderer, steppie, seshie):
-    """
-    Do I raise when no answer was given?
-    """
-    with patch.object(render.pyinquirer, "prompt", autospec=True, return_value={}):
-        with raises(error.Unanswered):
-            renderer.render(steppie, seshie)
 
 
 def test_render_no_description(renderer, steppie, seshie):
@@ -64,18 +52,10 @@ def test_render_no_description(renderer, steppie, seshie):
     """
     seshie.storage.description = None
     seshie.script.preamble = {"name": "SCRIPT NAME"}
+    prompt = Mock(return_value="here we go")
     with patch.object(
-        render.pyinquirer, "prompt", autospec=True, return_value={"q1": "here we go"}
+        render.InquirerRender, "_inquirer_dispatch", autospec=True, return_value=prompt
     ) as m_prompt:
         renderer.render(steppie, seshie)
 
-    m_prompt.assert_called_once_with(
-        questions=[
-            {
-                "name": ANY,
-                "message": "SCRIPT NAME : q1\noh noo\n>>",
-                "type": ANY,
-            }
-        ],
-        answers=ANY,
-    )
+    m_prompt.return_value.assert_called_once_with("SCRIPT NAME : q1\noh noo\n>>")

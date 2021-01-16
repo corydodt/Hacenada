@@ -168,6 +168,7 @@ class DateTimeSerializer(Serializer):
     """
     Round trip datetimes (which are also timezone-aware) through tinydb
     """
+
     OBJ_CLASS = datetime.datetime
 
     def encode(self, obj: datetime.datetime) -> str:
@@ -187,5 +188,5 @@ def _new_db(path: pathlib.Path) -> TinyDB:
     Construct a TinyDB with our customizations
     """
     serialization = SerializationMiddleware()
-    serialization.register_serializer(DateTimeSerializer(), 'TinyDate')
+    serialization.register_serializer(DateTimeSerializer(), "TinyDate")
     return TinyDB(path, storage=serialization)

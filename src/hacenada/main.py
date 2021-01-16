@@ -103,7 +103,7 @@ def next(filename):
     """
     filename, _store = _find_storage_somehow(filename)
 
-    _opt = session.SessionOptions(renderer=render.PyInquirerRender())
+    _opt = session.SessionOptions(renderer=render.InquirerRender())
     _script = script.Script.from_scriptfile(filename)
     sesh = session.Session(script=_script, storage=_store, options=_opt)
 
@@ -125,7 +125,7 @@ def start(filename, starting_over):
     _store = storage.HomeDirectoryStorage.from_path(filename)
 
     _script = script.Script.from_scriptfile(filename)
-    _opt = session.SessionOptions(renderer=render.PyInquirerRender())
+    _opt = session.SessionOptions(renderer=render.InquirerRender())
     sesh = session.Session(script=_script, storage=_store, options=_opt)
     if sesh.started and not starting_over:
         raise click.UsageError(

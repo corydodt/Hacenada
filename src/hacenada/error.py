@@ -31,9 +31,3 @@ class RenderError(Exception):
     """
     Base for all rendering-related errors
     """
-
-
-class Unanswered(RenderError):
-    """
-    User departed from the question without answering it somehow (maybe Ctrl+C)
-    """

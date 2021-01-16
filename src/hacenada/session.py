@@ -45,11 +45,7 @@ class Session:
 
         while remaining:
             step = remaining.pop(0)
-            try:
-                q_a = self.options.renderer.render(step, context=self)
-            except error.Unanswered:
-                print(f"** Canceled at {step['label']}")
-                return
+            q_a = self.options.renderer.render(step, context=self)
 
             self.storage.save_answer(q_a)
             posthandler = getattr(self, f"post_{step['type']}", lambda *a: None)
