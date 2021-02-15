@@ -11,7 +11,7 @@ class StorageError(Exception):
 
 class MultipleNextFound(StorageError):
     """
-    More than once possible session exists in this directory, can't automatically pick one
+    More than one possible session exists in this directory, can't automatically pick one
     """
 
 
