@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "Hacenada"
+version = "0.1.2"
+description = "Write do-nothing scripts"
+authors = ["Cory Dodt <corydodt@gmail.com>"]
+packages = [
+    { include = "hacenada", from = "src" },
+    ]
+readme = "README.md"
+homepage = "https://github.com/corydodt/Hacenada"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    ]
+
+[tool.poetry.dependencies]
+python = ">= 3.8, <4"
+
+attrs = "^21.4"
+click = "^8.1"
+inquirer = "^2.9"
+tinydb = "^4.7"
+tinydb-serialization = "^2.1"
+# typing_extensions  # was this required only for python 3.7 and earlier?
+# codado = ""   # am i actually using this?
+toml = "^0.10"
+
+# These optional deps will not be installed, unless you do
+#   poetry install -E test  (in your poetry shell)
+# This approach is compatible with the `extras` property in tox.ini.
+pytest = { version = "^6.2", optional = true }
+pytest-cov = { version = "^3.0.0", optional = true }
+pytest-flake8 = { version = "", optional = true }
+
+[tool.poetry.dev-dependencies]
+black = "^22.3"
+isort = "^5.10"
+tox = "^3.25"
+mypy = "^0.961"
+
+[tool.poetry.extras]
+test = [ "pytest", "pytest-cov", "pytest-flake8" ]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+hacenada = "hacenada.main:hacenada"
+
+[tool.isort]
+profile = "black"
+lines_after_imports = 2

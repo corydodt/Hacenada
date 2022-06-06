@@ -1,8 +1,8 @@
 """
 Abstract types
 """
-from abc import ABC, abstractmethod
 import typing
+from abc import ABC, abstractmethod
 
 from hacenada.const import STR_DICT
 

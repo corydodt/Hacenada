@@ -1,28 +1,42 @@
-SHELL 			:= /bin/bash
-.PHONY			:= test format
+#!/usr/bin/env make
 
-curdir          := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-VERSION 		:= $(shell python $(curdir)/setup.py --version)
-CPU_TYPE 		:= amd64
-SNAP_TARGET		:= $(curdir)/hacenada_$(VERSION)_$(CPU_TYPE).snap
+SHELL 				:= /usr/bin/env bash
+PROG				:= Hacenada
+SOURCES				:= src/**/*.py conftest.py pyproject.toml poetry.lock pytest.ini tox.ini
+TAGGED_VERSION		:= $(shell tools/describe-version)
+PYPROJECT_VERSION	:= $(shell poetry version -s)
+SDIST				:= dist/$(PROG)-$(PYPROJECT_VERSION).tar.gz
+WHEEL				:= dist/$(PROG)-$(PYPROJECT_VERSION)-py3-none-any.whl
+RELEASE_ARTIFACTS	:= $(SDIST) $(WHEEL)
+
+
+.PHONY: format sdist clean test print-release-artifacts
 
 
 format: # reformat source python files
-	isort conftest.py setup.py src
-	black conftest.py setup.py src
+	isort conftest.py src
+	black conftest.py src
 
 
-requirements.txt: setup.py
-	python3 -m venv _virtual_tmp
-	. _virtual_tmp/bin/activate \
-		&& pip install wheel \
-		&& pip install . \
-		&& pip freeze | grep -v [hH]acenada > $@
-	rm -rf _virtual_tmp
+requirements.txt: pyproject.toml
+	poetry export -o requirements.txt 
 
 
-snap: $(SNAP_TARGET)
+$(RELEASE_ARTIFACTS) &: $(SOURCES)
+	@if [[ $(TAGGED_VERSION) != "v$(PYPROJECT_VERSION)" ]]; then \
+		echo "** Warning: pyproject.toml version v$(PYPROJECT_VERSION) != git tag version $(TAGGED_VERSION)" 1>&2; \
+		echo "** The files produced cannot be released" 1>&2; \
+	fi
+	poetry build
 
 
-$(SNAP_TARGET):
-	snapcraft --use-lxd
+print-release-artifacts: $(RELEASE_ARTIFACTS)
+	@echo $(RELEASE_ARTIFACTS)
+
+
+clean:
+	rm -f $(RELEASE_ARTIFACTS)
+
+
+test:
+	tox

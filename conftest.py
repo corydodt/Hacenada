@@ -2,8 +2,8 @@
 Common fixtures
 """
 import os
-from pathlib import Path
 import shutil
+from pathlib import Path
 from unittest.mock import patch
 
 from pytest import fixture
