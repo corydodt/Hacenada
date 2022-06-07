@@ -195,5 +195,5 @@ the whole session to `install-hacenada.log.d/`.
     - Markdown, TOML and JSON print output of the script+answers
     - Python 3.7, 3.8, 3.9 support
 
-[0.1.2]: https://github.com/corydodt/Codado/tree/v0.1.2
-[0.1.3]: https://github.com/corydodt/Codado/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/corydodt/Hacenada/tree/v0.1.2
+[0.1.3]: https://github.com/corydodt/Hacenada/compare/v0.1.2...v0.1.3
