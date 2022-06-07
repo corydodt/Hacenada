@@ -38,7 +38,7 @@ jobs:
       - name: Package release
         id: package_release
         run: |
-          make sdist
+          make release-artifacts
           echo "::set-output name=release_artifacts::$(make print-release-artifacts)"
 
       - name: Create GitHub release with gh

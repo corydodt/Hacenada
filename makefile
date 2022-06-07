@@ -10,7 +10,7 @@ WHEEL				:= dist/$(PROG)-$(PYPROJECT_VERSION)-py3-none-any.whl
 RELEASE_ARTIFACTS	:= $(SDIST) $(WHEEL)
 
 
-.PHONY: format sdist clean test print-release-artifacts
+.PHONY: format clean test print-release-artifacts release-artifacts
 
 
 format: # reformat source python files
@@ -30,7 +30,10 @@ $(RELEASE_ARTIFACTS) &: $(SOURCES)
 	poetry build
 
 
-print-release-artifacts: $(RELEASE_ARTIFACTS)
+release-artifacts: $(RELEASE_ARTIFACTS)
+
+
+print-release-artifacts:
 	@echo $(RELEASE_ARTIFACTS)
 
 
