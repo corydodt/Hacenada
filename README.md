@@ -173,6 +173,18 @@ the whole session to `install-hacenada.log.d/`.
 
 ## Change Log
 
+### [0.1.3] - 2022.06.07
+
+#### Changed:
+  - State and configuration (not logs) are now stored according to the [XDG Base Directory Spec] and
+    generally live in `~/.config/hacenada`
+  - Switch to pyproject.toml & poetry for maintenance
+
+[XDG Base Directory Spec]: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+
+#### Fixed:
+  - Tests
+
 ### [0.1.2] - 2021.01.14
   - First numbered release.
   - Current features:
@@ -184,3 +196,4 @@ the whole session to `install-hacenada.log.d/`.
     - Python 3.7, 3.8, 3.9 support
 
 [0.1.2]: https://github.com/corydodt/Codado/tree/v0.1.2
+[0.1.3]: https://github.com/corydodt/Codado/compare/v0.1.2...v0.1.3
