@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Hacenada"
-version = "0.1.2"
+version = "0.1.3"
 description = "Write do-nothing scripts"
 authors = ["Cory Dodt <corydodt@gmail.com>"]
 packages = [
