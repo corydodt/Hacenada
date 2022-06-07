@@ -19,7 +19,7 @@ message = "Create a new release branch from main: `release/x.x.x`"
 message = """
 In release/x.x.x:
 
-- update setup.py __version__
+- update pyproject.toml `version`
 """
 
 [[step]]
@@ -41,14 +41,6 @@ message = """
 
 [[step]]
 message = """
-```
-setup.py sdist bdist_wheel
-twine upload
-```
-"""
-
-[[step]]
-message = """
 - tag the release branch
 ```
 git tag -a -m "vx.x.x" vx.x.x
@@ -58,12 +50,7 @@ git push --tags
 
 [[step]]
 message = """
-Now,
-- update __version__ to `+dev`
-```
-git add setup.py
-git ci -m "meta: adding +dev to version"
-```
+- run the "release" github action, choosing the release/x.x.x branch
 """
 
 [[step]]
