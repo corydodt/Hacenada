@@ -4,7 +4,8 @@ Built-in storage abstractions
 from __future__ import annotations
 
 import datetime
-import pathlib
+import os
+from pathlib import Path
 import typing
 
 import attr
@@ -17,7 +18,8 @@ from hacenada.const import STR_DICT
 
 
 ENCODING = "utf-8"
-HACENADA_HOME = pathlib.Path.home() / ".hacenada"
+XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")
+HACENADA_HOME = Path(XDG_CONFIG_HOME) / "hacenada"
 
 
 class Answer(compat.TypedDict):
@@ -26,7 +28,7 @@ class Answer(compat.TypedDict):
     when: datetime.datetime
 
 
-def _normalize_path(pth: pathlib.Path, suffix: typing.Optional[str] = None) -> str:
+def _normalize_path(pth: Path, suffix: typing.Optional[str] = None) -> str:
     """
     Produce a string version of pth replacing / with __ to produce a legal filename
 
@@ -53,7 +55,7 @@ class HomeDirectoryStorage(SessionStorage):
         return dict(meta=self.meta.all()[0], answer=self.answer.all())
 
     @classmethod
-    def from_path(cls, path: pathlib.Path) -> HomeDirectoryStorage:
+    def from_path(cls, path: Path) -> HomeDirectoryStorage:
         """
         From the path to the .toml script, find the storage in the homedir
         """
@@ -74,7 +76,7 @@ class HomeDirectoryStorage(SessionStorage):
 
         Looks for any storage.json that has a prefix of the current absolute cwd path.
         """
-        cwd = pathlib.Path.cwd()
+        cwd = Path.cwd()
         normal = _normalize_path(cwd, "")
         any_json = list(HACENADA_HOME.glob(f"{normal}*.json"))
         if len(any_json) > 1:
@@ -87,7 +89,7 @@ class HomeDirectoryStorage(SessionStorage):
         return cls._from_json_path(any_json[0])
 
     @classmethod
-    def _from_json_path(cls, path: pathlib.Path) -> HomeDirectoryStorage:
+    def _from_json_path(cls, path: Path) -> HomeDirectoryStorage:
         """
         SessionStorage from a Path to a .json tinydb
         """
@@ -150,14 +152,14 @@ class HomeDirectoryStorage(SessionStorage):
         self.update_meta(description=value)
 
     @property
-    def script_path(self) -> pathlib.Path:
+    def script_path(self) -> Path:
         """
         The meta script_path of the session
         """
-        return pathlib.Path(self.meta.all()[0].get("script_path", ""))
+        return Path(self.meta.all()[0].get("script_path", ""))
 
     @script_path.setter
-    def script_path(self, value: pathlib.Path):
+    def script_path(self, value: Path):
         """
         Set the meta script_path of the session in tinydb
         """
@@ -183,7 +185,7 @@ class DateTimeSerializer(Serializer):
         return ret
 
 
-def _new_db(path: pathlib.Path) -> TinyDB:
+def _new_db(path: Path) -> TinyDB:
     """
     Construct a TinyDB with our customizations
     """

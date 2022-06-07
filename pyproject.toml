@@ -22,8 +22,6 @@ click = "^8.1"
 inquirer = "^2.9"
 tinydb = "^4.7"
 tinydb-serialization = "^2.1"
-# typing_extensions  # was this required only for python 3.7 and earlier?
-# codado = ""   # am i actually using this?
 toml = "^0.10"
 
 # These optional deps will not be installed, unless you do
@@ -32,6 +30,8 @@ toml = "^0.10"
 pytest = { version = "^6.2", optional = true }
 pytest-cov = { version = "^3.0.0", optional = true }
 pytest-flake8 = { version = "", optional = true }
+types-toml = { version = "^0.10.7", optional = true }
+mypy = { version = "^0.961", optional = true }
 
 [tool.poetry.dev-dependencies]
 black = "^22.3"
@@ -40,7 +40,7 @@ tox = "^3.25"
 mypy = "^0.961"
 
 [tool.poetry.extras]
-test = [ "pytest", "pytest-cov", "pytest-flake8" ]
+test = [ "pytest", "pytest-cov", "pytest-flake8", "mypy", "types-toml" ]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
