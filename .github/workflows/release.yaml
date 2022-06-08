@@ -27,7 +27,7 @@ jobs:
 
           pyproject_version="$(poetry version -s)"
           if [[ "$release_version" != "v$pyproject_version" ]]; then
-            echo "::error::Tagged version does not match the version in pyproject.toml. Edit pyproject.toml and set: version = \"${release_version#v}\"."
+            echo "::error::Tagged version does not match the version in pyproject.toml. Edit pyproject.toml and set: version = \"${release_version#v}\""
             echo "::error::You will probably have to create a new tag OR move the existing tag after you commit this change--make sure the new tag matches the new version!"
             false
           fi
