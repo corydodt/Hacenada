@@ -12,7 +12,7 @@ import attr
 from tinydb import TinyDB, table, where
 from tinydb_serialization import SerializationMiddleware, Serializer
 
-from hacenada import compat, error
+from hacenada import error
 from hacenada.abstract import SessionStorage
 from hacenada.const import STR_DICT
 
@@ -22,7 +22,7 @@ XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")
 HACENADA_HOME = Path(XDG_CONFIG_HOME) / "hacenada"
 
 
-class Answer(compat.TypedDict):
+class Answer(typing.TypedDict):
     label: str
     value: typing.Any
     when: datetime.datetime
